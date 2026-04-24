@@ -1,5 +1,7 @@
 // lib/core/services/storage_service.dart
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io' show Platform;
 
 class StorageService {
   static final StorageService _instance = StorageService._internal();
@@ -7,7 +9,7 @@ class StorageService {
   StorageService._internal();
   
   // Configure for all platforms
-  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
     aOptions: AndroidOptions(
       encryptedSharedPreferences: true,
     ),
@@ -17,20 +19,51 @@ class StorageService {
     mOptions: MacOsOptions(),  // No serviceName parameter needed
   );
   
+  SharedPreferences? _prefs;
+  
+  Future<dynamic> _getStorage() async {
+    if (Platform.isMacOS) {
+      _prefs ??= await SharedPreferences.getInstance();
+      return _prefs;
+    } else {
+      return _secureStorage;
+    }
+  }
+  
   Future<void> saveToken(String key, String value) async {
-    await _storage.write(key: key, value: value);
+    final storage = await _getStorage();
+    if (storage is SharedPreferences) {
+      await storage.setString(key, value);
+    } else {
+      await (storage as FlutterSecureStorage).write(key: key, value: value);
+    }
   }
   
   Future<String?> getToken(String key) async {
-    return await _storage.read(key: key);
+    final storage = await _getStorage();
+    if (storage is SharedPreferences) {
+      return storage.getString(key);
+    } else {
+      return await (storage as FlutterSecureStorage).read(key: key);
+    }
   }
   
   Future<void> deleteToken(String key) async {
-    await _storage.delete(key: key);
+    final storage = await _getStorage();
+    if (storage is SharedPreferences) {
+      await storage.remove(key);
+    } else {
+      await (storage as FlutterSecureStorage).delete(key: key);
+    }
   }
   
   Future<void> clearAll() async {
-    await _storage.deleteAll();
+    final storage = await _getStorage();
+    if (storage is SharedPreferences) {
+      await storage.clear();
+    } else {
+      await (storage as FlutterSecureStorage).deleteAll();
+    }
   }
   
   // Convenience methods

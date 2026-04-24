@@ -2,13 +2,14 @@
 // import 'package:flutter/material.dart';
 import 'package:client/features/admin/view/admin_dashboard.dart';
 import 'package:client/features/admin/widgets/admin_sidebar.dart';
+import 'package:client/features/inventory/view/all_products_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:client/features/auth/view/login_screen.dart';
 import 'package:client/features/auth/view/register_screen.dart';
 import 'package:client/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:client/features/inventory/view/inventory_dashboard.dart';
 import 'package:client/features/pos/view/pos_dashboard.dart';
-// import 'package:client/features/project_management/view/project_dashboard.dart';
+import 'package:client/features/project/view/project_dashboard.dart';
 // import 'package:client/features/reports/view/reports_dashboard.dart';
 
 class AppRoutes {
@@ -49,10 +50,10 @@ class AppRoutes {
         GoRoute(path: register, name: 'register', builder: (context, state) => const RegisterScreen()),
         // GoRoute(path: admindashboard, name: 'admin', builder:(context, state) => const AdminDashboard(),),
 
-        GoRoute(path: admindashboard, name: 'admin', builder: (context, state) => const AdminHomePage(),),
-        GoRoute(path: inventoryDashboard, name: 'inventory', builder: (context, state) => const InventoryDashboard()),
-        GoRoute(path: posDashboard, name: 'pos', builder: (context, state) => const PosDashboard()),
-        // GoRoute(path: projectDashboard, name: 'project', builder: (context, state) => const ProjectDashboard()),
+        GoRoute(path: admindashboard, name: 'admin', builder: (context, state) => const AdminDashboard(),),
+        GoRoute(path: inventoryDashboard, name: 'inventory', builder: (context, state) => const AllProductsPage()),
+        GoRoute(path: posDashboard, name: 'pos', builder: (context, state) => const POSDashboard()),
+        GoRoute(path: projectDashboard, name: 'project', builder: (context, state) => const ProjectDashboard()),
         // GoRoute(path: reportsDashboard, name: 'reports', builder: (context, state) => const ReportsDashboard()),
       ],
     );
@@ -66,7 +67,7 @@ class AppRoutes {
         return inventoryDashboard;
       case 'cashier':
         return posDashboard;
-      case 'project_supervisor':
+      case 'supervisor':
         return projectDashboard;
       default:
         return inventoryDashboard;

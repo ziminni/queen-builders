@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../../auth/viewmodel/auth_viewmodel.dart';
+import '../../../routes/routes.dart';
 
 void main() {
   runApp(const MyApp());
@@ -76,9 +81,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   onToggleSidebar: _toggleSidebar,
                 ),
                 // Dynamic content based on selected menu item
-                Expanded(
-                  child: _buildMainContent(),
-                ),
+                Expanded(child: _buildMainContent()),
               ],
             ),
           ),
@@ -207,25 +210,34 @@ class AdminSidebar extends StatelessWidget {
               icon: Icons.logout,
               label: 'Logout',
               isSelected: false,
-              onTap: () {
-                // Handle logout action
-                showDialog(
+              onTap: () async {
+                final confirm = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
-                  title: const Text('Logout'),
-                  content: const Text('Are you sure you want to logout?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Logout', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
+                    title: const Text('Logout'),
+                    content: const Text('Are you sure you want to logout?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text(
+                          'Logout',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
+
+                if (confirm == true) {
+                  await context.read<AuthViewModel>().logout();
+                  if (context.mounted) {
+                    context.go(AppRoutes.login);
+                  }
+                }
               },
             ),
           ),
@@ -265,7 +277,9 @@ class AdminSidebar extends StatelessWidget {
                   style: TextStyle(
                     color: isSelected ? Colors.white : Colors.grey[400],
                     fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -332,14 +346,14 @@ class HeaderWidget extends StatelessWidget {
             backgroundColor: Colors.amber[700],
             child: const Text(
               'A',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 8),
-          const Text(
-            'Admin',
-            style: TextStyle(color: Color(0xFF1A2A3A)),
-          ),
+          const Text('Admin', style: TextStyle(color: Color(0xFF1A2A3A))),
         ],
       ),
     );
@@ -360,9 +374,9 @@ class DashboardContent extends StatelessWidget {
           Text(
             'Welcome back, Admin!',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1A2A3A),
-                ),
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A2A3A),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -458,9 +472,5 @@ class MenuItem {
   final String label;
   final int index;
 
-  MenuItem({
-    required this.icon,
-    required this.label,
-    required this.index,
-  });
+  MenuItem({required this.icon, required this.label, required this.index});
 }
