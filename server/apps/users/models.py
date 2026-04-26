@@ -21,9 +21,9 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         ('admin', 'Admin'),
-        ('manager', 'Manager'),
+        ('stockManager', 'Stock Manager'),
         ('cashier', 'Cashier'),
-        ('project_supervisor', 'Project Supervisor'),
+        ('projectManager', 'Project Manager'),
         ('staff', 'Staff'),
     )
     

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/product.dart';
-import '../../../core/services/storage_service.dart';
+import '../../../routes/routes.dart';
+import '../../auth/viewmodel/auth_viewmodel.dart';
+import '../viewmodels/inventory_viewmodel.dart';
+import '../models/sample_products.dart';
 import '../widgets/inventory_sidebar.dart';
 import '../widgets/inventory_header.dart';
 
@@ -15,143 +19,94 @@ class AllProductsPage extends StatefulWidget {
 }
 
 class _AllProductsPageState extends State<AllProductsPage> {
-  String activeNav = 'inventory';
-  String selectedCategory = '';
-  String selectedBrand = '';
-  String selectedStatus = '';
-  String selectedSupplier = '';
-  String searchQuery = '';
-  bool sidebarOpen = true; // Sidebar toggle state
-
-  List<Product> products = [];
-  List<Product> filteredProducts = [];
-
   @override
   void initState() {
     super.initState();
-    _loadProducts();
-  }
-
-  void _loadProducts() {
-    products = _getSampleProducts();
-    _applyFilters();
-  }
-
-  void _applyFilters() {
-    setState(() {
-      filteredProducts = products.where((product) {
-        final matchesSearch = searchQuery.isEmpty ||
-            product.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
-            product.category.toLowerCase().contains(searchQuery.toLowerCase()) ||
-            product.brand.toLowerCase().contains(searchQuery.toLowerCase()) ||
-            product.itemCode.toLowerCase().contains(searchQuery.toLowerCase());
-
-        final matchesCategory = selectedCategory.isEmpty || product.category == selectedCategory;
-        final matchesBrand = selectedBrand.isEmpty || product.brand == selectedBrand;
-        final matchesSupplier = selectedSupplier.isEmpty || product.supplierCode == selectedSupplier;
-
-        bool matchesStatus = true;
-        if (selectedStatus.isNotEmpty) {
-          if (selectedStatus == 'OK' && product.stockStatus != StockStatus.ok) matchesStatus = false;
-          if (selectedStatus == 'LOW' && product.stockStatus != StockStatus.low) matchesStatus = false;
-          if (selectedStatus == 'CRITICAL' && product.stockStatus != StockStatus.critical) matchesStatus = false;
-        }
-
-        return matchesSearch && matchesCategory && matchesBrand && matchesSupplier && matchesStatus;
-      }).toList();
-    });
-  }
-
-  void _clearFilters() {
-    setState(() {
-      selectedCategory = '';
-      selectedBrand = '';
-      selectedStatus = '';
-      selectedSupplier = '';
-      searchQuery = '';
-      _applyFilters();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<InventoryViewModel>().initializeProducts(getSampleInventoryProducts());
     });
   }
 
   Future<void> _handleLogout() async {
-    final storageService = StorageService();
-    await storageService.clearAll();
+    await context.read<AuthViewModel>().logout();
     if (mounted) {
-      context.go('/login');
+      context.go(AppRoutes.login);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: Row(
-        children: [
-          // Sidebar
-          InventorySidebar(
-            activeNav: activeNav,
-            isOpen: sidebarOpen,
-            onNavChange: (nav) {
-              setState(() {
-                activeNav = nav;
-              });
-            },
-            onLogout: _handleLogout,
-          ),
+    return Consumer<InventoryViewModel>(
+      builder: (context, viewModel, _) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFAFAFA),
+          body: Row(
+            children: [
+              // Sidebar
+              InventorySidebar(
+                activeNav: viewModel.activeNav,
+                isOpen: viewModel.sidebarOpen,
+                onNavChange: (nav) {
+                  viewModel.setActiveNav(nav);
+                  if (nav == 'dashboard') {
+                    context.go(AppRoutes.stockManager);
+                  } else if (nav == 'inventory') {
+                    // Already in all products page
+                  }
+                },
+                onLogout: _handleLogout,
+              ),
 
-          // Main Content
-          Expanded(
-            child: Column(
-              children: [
-                // Header
-                InventoryHeader(
-                  title: 'Stock Manager Dashboard',
-                  searchQuery: searchQuery,
-                  onSearchChanged: (query) {
-                    setState(() {
-                      searchQuery = query;
-                      _applyFilters();
-                    });
-                  },
-                  onMenuToggle: () {
-                    setState(() {
-                      sidebarOpen = !sidebarOpen;
-                    });
-                  },
-                  onNotificationTap: () {},
-                  onProfileTap: () {},
-                ),
+              // Main Content
+              Expanded(
+                child: Column(
+                  children: [
+                    // Header
+                    InventoryHeader(
+                      title: 'Stock Manager Dashboard',
+                      searchQuery: viewModel.searchQuery,
+                      onSearchChanged: (query) {
+                        viewModel.setSearchQuery(query);
+                      },
+                      onMenuToggle: () {
+                        viewModel.toggleSidebar();
+                      },
+                      onNotificationTap: () {},
+                      onProfileTap: () {},
+                    ),
 
-                // Main Content Area with Page Title & Action Buttons
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Page Title & Action Buttons Section
-                          _buildPageHeader(),
+                    // Main Content Area with Page Title & Action Buttons
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Page Title & Action Buttons Section
+                              _buildPageHeader(),
 
-                          const SizedBox(height: 32),
+                              const SizedBox(height: 32),
 
-                          // Filters Bar
-                          _buildFiltersBar(),
+                              // Filters Bar
+                              _buildFiltersBar(viewModel),
 
-                          const SizedBox(height: 24),
+                              const SizedBox(height: 24),
 
-                          // Products Table
-                          _buildProductsTable(),
-                        ],
+                              // Products Table
+                              _buildProductsTable(viewModel),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -215,29 +170,6 @@ class _AllProductsPageState extends State<AllProductsPage> {
               ),
             ),
 
-            // Adjust Stock Button
-            OutlinedButton.icon(
-              onPressed: () {
-                // Handle adjust stock
-              },
-              icon: const Icon(Icons.edit, size: 18),
-              label: Text(
-                'Adjust Stock',
-                style: AppTextStyles.button.copyWith(
-                  color: AppColors.richGold,
-                  fontSize: 13,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                side: const BorderSide(color: AppColors.richGold, width: 2),
-                foregroundColor: AppColors.richGold,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-
             // Add Product Button
             ElevatedButton.icon(
               onPressed: () {
@@ -264,12 +196,12 @@ class _AllProductsPageState extends State<AllProductsPage> {
     );
   }
 
-  Widget _buildFiltersBar() {
+  Widget _buildFiltersBar(InventoryViewModel viewModel) {
     final categories = ['', 'Paint & Finishing', 'Cement', 'Aggregates', 'Steel', 'Wood',
       'Nails & Fasteners', 'Blocks', 'Roofing', 'Electrical', 'Plumbing', 'Tools', 'Safety Equipment'];
-    final brands = ['', ...products.map((p) => p.brand).toSet().toList()..sort()];
+    final brands = ['', ...viewModel.products.map((p) => p.brand).toSet().toList()..sort()];
     final statuses = ['', 'OK', 'LOW', 'CRITICAL'];
-    final suppliers = ['', ...products.map((p) => p.supplierCode ?? '').where((s) => s.isNotEmpty).toSet().toList()..sort()];
+    final suppliers = ['', ...viewModel.products.map((p) => p.supplierCode ?? '').where((s) => s.isNotEmpty).toSet().toList()..sort()];
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -286,14 +218,11 @@ class _AllProductsPageState extends State<AllProductsPage> {
               Expanded(
                 child: _buildFilterDropdown(
                   label: 'Filter by Category',
-                  value: selectedCategory,
+                  value: viewModel.selectedCategory,
                   items: categories,
                   displayText: (val) => val.isEmpty ? 'All Categories' : val,
                   onChanged: (val) {
-                    setState(() {
-                      selectedCategory = val ?? '';
-                      _applyFilters();
-                    });
+                    viewModel.setSelectedCategory(val ?? '');
                   },
                 ),
               ),
@@ -301,14 +230,11 @@ class _AllProductsPageState extends State<AllProductsPage> {
               Expanded(
                 child: _buildFilterDropdown(
                   label: 'Filter by Brand',
-                  value: selectedBrand,
+                  value: viewModel.selectedBrand,
                   items: brands,
                   displayText: (val) => val.isEmpty ? 'All Brands' : val,
                   onChanged: (val) {
-                    setState(() {
-                      selectedBrand = val ?? '';
-                      _applyFilters();
-                    });
+                    viewModel.setSelectedBrand(val ?? '');
                   },
                 ),
               ),
@@ -316,14 +242,11 @@ class _AllProductsPageState extends State<AllProductsPage> {
               Expanded(
                 child: _buildFilterDropdown(
                   label: 'Filter by Status',
-                  value: selectedStatus,
+                  value: viewModel.selectedStatus,
                   items: statuses,
                   displayText: (val) => val.isEmpty ? 'All Status' : val,
                   onChanged: (val) {
-                    setState(() {
-                      selectedStatus = val ?? '';
-                      _applyFilters();
-                    });
+                    viewModel.setSelectedStatus(val ?? '');
                   },
                 ),
               ),
@@ -331,14 +254,11 @@ class _AllProductsPageState extends State<AllProductsPage> {
               Expanded(
                 child: _buildFilterDropdown(
                   label: 'Filter by Supplier',
-                  value: selectedSupplier,
+                  value: viewModel.selectedSupplier,
                   items: suppliers,
                   displayText: (val) => val.isEmpty ? 'All Suppliers' : val,
                   onChanged: (val) {
-                    setState(() {
-                      selectedSupplier = val ?? '';
-                      _applyFilters();
-                    });
+                    viewModel.setSelectedSupplier(val ?? '');
                   },
                 ),
               ),
@@ -349,7 +269,7 @@ class _AllProductsPageState extends State<AllProductsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               OutlinedButton(
-                onPressed: _clearFilters,
+                onPressed: () => viewModel.clearFilters(),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   side: const BorderSide(color: AppColors.border, width: 2),
@@ -418,7 +338,7 @@ class _AllProductsPageState extends State<AllProductsPage> {
     );
   }
 
-  Widget _buildProductsTable() {
+  Widget _buildProductsTable(InventoryViewModel viewModel) {
     return Container(
       height: 600,
       decoration: BoxDecoration(
@@ -458,12 +378,12 @@ class _AllProductsPageState extends State<AllProductsPage> {
 
           // Table Body
           Expanded(
-            child: filteredProducts.isEmpty
+            child: viewModel.filteredProducts.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
-                    itemCount: filteredProducts.length,
+                    itemCount: viewModel.filteredProducts.length,
                     itemBuilder: (context, index) {
-                      return _buildTableRow(filteredProducts[index]);
+                      return _buildTableRow(viewModel.filteredProducts[index]);
                     },
                   ),
           ),
@@ -746,115 +666,5 @@ class _AllProductsPageState extends State<AllProductsPage> {
         ],
       ),
     );
-  }
-
-  List<Product> _getSampleProducts() {
-    return [
-      Product(
-        id: 1,
-        itemCode: 'PNT001-BOY-WHT-1L',
-        name: 'Boysen Premium White 1L',
-        description: 'Premium quality latex white paint, 1 liter',
-        category: 'Paint & Finishing',
-        subcategory: 'Interior Paint',
-        brand: 'Boysen',
-        specifications: '1L, White, Latex',
-        unit: 'liter',
-        costPrice: 150,
-        markupPercent: 30,
-        sellingPrice: 195,
-        stock: 80,
-        reorderLevel: 20,
-        reorderQuantity: 50,
-        supplier: 'Supplier A - Boysen Paint Center',
-        supplierCode: 'SUP-A',
-        location: 'Aisle 1-A',
-        taxable: true,
-      ),
-      Product(
-        id: 2,
-        itemCode: 'PNT001-BOY-WHT-4L',
-        name: 'Boysen Premium White 4L',
-        description: 'Premium quality latex white paint, 4 liters',
-        category: 'Paint & Finishing',
-        subcategory: 'Interior Paint',
-        brand: 'Boysen',
-        specifications: '4L, White, Latex',
-        unit: 'gallon',
-        costPrice: 560,
-        markupPercent: 30,
-        sellingPrice: 728,
-        stock: 45,
-        reorderLevel: 15,
-        reorderQuantity: 30,
-        supplier: 'Supplier A - Boysen Paint Center',
-        supplierCode: 'SUP-A',
-        location: 'Aisle 1-A',
-        taxable: true,
-      ),
-      Product(
-        id: 12,
-        itemCode: 'CMT001-HOL-PTL-40KG',
-        name: 'Holcim Portland Cement 40kg',
-        description: 'Type 1 Portland cement, 40kg bag',
-        category: 'Cement',
-        subcategory: 'Portland Cement',
-        brand: 'Holcim',
-        specifications: '40kg, Type 1',
-        unit: 'bag',
-        costPrice: 220,
-        markupPercent: 20,
-        sellingPrice: 264,
-        stock: 450,
-        reorderLevel: 100,
-        reorderQuantity: 200,
-        supplier: 'Supplier C - Holcim Philippines',
-        supplierCode: 'SUP-C',
-        location: 'Warehouse Zone A',
-        taxable: true,
-      ),
-      Product(
-        id: 17,
-        itemCode: 'STL001-PAG-RBR-10MM',
-        name: 'Pag-asa Steel 10mm Rebar',
-        description: 'Deformed steel rebar, 10mm diameter, 6 meters',
-        category: 'Steel',
-        subcategory: 'Rebar',
-        brand: 'Pag-asa Steel',
-        specifications: '10mm x 6m, Grade 40',
-        unit: 'piece',
-        costPrice: 250,
-        markupPercent: 20,
-        sellingPrice: 300,
-        stock: 15,
-        reorderLevel: 200,
-        reorderQuantity: 500,
-        supplier: 'Supplier G - Pag-asa Steel Corp',
-        supplierCode: 'SUP-G',
-        location: 'Warehouse Zone B',
-        taxable: true,
-      ),
-      Product(
-        id: 21,
-        itemCode: 'WOD001-LCL-2X2-8FT',
-        name: 'Local Timber 2x2 Lumber (8ft)',
-        description: 'Kiln-dried lumber, 2x2 inches, 8 feet',
-        category: 'Wood',
-        subcategory: 'Lumber',
-        brand: 'Local Timber',
-        specifications: '2x2" x 8ft, Kiln-dried',
-        unit: 'piece',
-        costPrice: 120,
-        markupPercent: 35,
-        sellingPrice: 162,
-        stock: 500,
-        reorderLevel: 80,
-        reorderQuantity: 200,
-        supplier: 'Supplier F - Local Timber Supply',
-        supplierCode: 'SUP-F',
-        location: 'Warehouse Zone C',
-        taxable: true,
-      ),
-    ];
   }
 }

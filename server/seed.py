@@ -21,10 +21,10 @@ def seed_users():
             'is_superuser': True
         },
         {
-            'email': 'manager@example.com',
-            'full_name': 'Manager User',
+            'email': 'stockmanager@example.com',
+            'full_name': 'Stock Manager',
             'password': 'manager123',
-            'role': 'manager',
+            'role': 'stockManager',
             'is_staff': True,
             'is_superuser': False
         },
@@ -37,10 +37,10 @@ def seed_users():
             'is_superuser': False
         },
         {
-            'email': 'supervisor@example.com',
-            'full_name': 'Project Supervisor',
-            'password': 'supervisor123',
-            'role': 'project_supervisor',
+            'email': 'projectmanager@example.com',
+            'full_name': 'Project Manager',
+            'password': 'project123',
+            'role': 'projectManager',
             'is_staff': False,
             'is_superuser': False
         },
