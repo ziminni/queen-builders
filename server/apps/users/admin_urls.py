@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .admin_directory_views import (
+    AdminAuditLogListView,
     AdminDirectoryUserDetailView,
     AdminDirectoryUserListCreateView,
 )
@@ -16,4 +17,5 @@ urlpatterns = [
         AdminDirectoryUserDetailView.as_view(),
         name='admin-directory-user-detail',
     ),
+    path('audit-logs/', AdminAuditLogListView.as_view(), name='admin-audit-logs'),
 ]

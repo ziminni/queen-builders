@@ -76,6 +76,11 @@ class InventoryRemoteSource {
     return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  Future<Map<String, dynamic>> markPosSalePaid(int id) async {
+    final r = await _api.dio.post(ApiConfig.inventoryPosSaleMarkPaid(id));
+    return Map<String, dynamic>.from(r.data as Map);
+  }
+
   Future<void> createProduct(NewProduct n) async {
     await _api.dio.post(ApiConfig.inventoryProducts, data: _newProductBody(n));
   }

@@ -5,11 +5,13 @@ class Transaction {
   final double total;
   final String paymentMethod;
   final List<TransactionItem> items;
+
   /// When true, sale is recorded as collectible / "utang" (pay-later).
   final bool isPayLater;
   final String? customerName;
   final String? customerPhone;
   final String? customerAddress;
+  final DateTime? paidAt;
 
   Transaction({
     required this.id,
@@ -22,7 +24,10 @@ class Transaction {
     this.customerName,
     this.customerPhone,
     this.customerAddress,
+    this.paidAt,
   });
+
+  bool get isCollectiblePaid => isPayLater && paidAt != null;
 
   Map<String, dynamic> toJson() {
     return {
@@ -36,6 +41,7 @@ class Transaction {
       'customerName': customerName,
       'customerPhone': customerPhone,
       'customerAddress': customerAddress,
+      'paidAt': paidAt?.toIso8601String(),
     };
   }
 
@@ -55,6 +61,9 @@ class Transaction {
       customerName: json['customerName'] as String?,
       customerPhone: json['customerPhone'] as String?,
       customerAddress: json['customerAddress'] as String?,
+      paidAt: json['paidAt'] == null
+          ? null
+          : DateTime.parse(json['paidAt'] as String),
     );
   }
 }
@@ -71,11 +80,7 @@ class TransactionItem {
   });
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'quantity': quantity,
-      'price': price,
-    };
+    return {'name': name, 'quantity': quantity, 'price': price};
   }
 
   factory TransactionItem.fromJson(Map<String, dynamic> json) {

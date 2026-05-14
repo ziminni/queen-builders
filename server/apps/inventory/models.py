@@ -110,6 +110,7 @@ class Sale(models.Model):
     items_count = models.PositiveIntegerField(default=0)
     payment_method = models.CharField(max_length=64)
     is_pay_later = models.BooleanField(default=False)
+    paid_at = models.DateTimeField(null=True, blank=True)
     customer_name = models.CharField(max_length=255, blank=True, default="")
     customer_phone = models.CharField(max_length=64, blank=True, default="")
     customer_address = models.TextField(blank=True, default="")

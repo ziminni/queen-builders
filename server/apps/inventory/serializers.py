@@ -256,6 +256,7 @@ class SaleOutSerializer(serializers.ModelSerializer):
     items = serializers.IntegerField(source="items_count", read_only=True)
     paymentMethod = serializers.CharField(source="payment_method", read_only=True)
     isPayLater = serializers.BooleanField(source="is_pay_later", read_only=True)
+    paidAt = serializers.DateTimeField(source="paid_at", read_only=True)
     customerName = serializers.CharField(source="customer_name", read_only=True)
     customerPhone = serializers.CharField(source="customer_phone", read_only=True)
     customerAddress = serializers.CharField(source="customer_address", read_only=True)
@@ -277,6 +278,7 @@ class SaleOutSerializer(serializers.ModelSerializer):
             "paymentMethod",
             "itemDetails",
             "isPayLater",
+            "paidAt",
             "customerName",
             "customerPhone",
             "customerAddress",

@@ -4,14 +4,18 @@ import '../../../core/constants/app_text_styles.dart';
 
 class POSHeader extends StatelessWidget {
   final VoidCallback? onNotificationTap;
+  final VoidCallback? onCollectiblesTap;
   final VoidCallback? onProfileTap;
   final int notificationCount;
+  final int pendingCollectiblesCount;
 
   const POSHeader({
     super.key,
     this.onNotificationTap,
+    this.onCollectiblesTap,
     this.onProfileTap,
     this.notificationCount = 0,
+    this.pendingCollectiblesCount = 0,
   });
 
   @override
@@ -21,9 +25,7 @@ class POSHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.deepBlack,
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.richGold.withOpacity(0.2),
-          ),
+          bottom: BorderSide(color: AppColors.richGold.withValues(alpha: 0.2)),
         ),
       ),
       child: Row(
@@ -38,8 +40,8 @@ class POSHeader extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.richGold.withOpacity(0.1),
-                  AppColors.richGold.withOpacity(0.05),
+                  AppColors.richGold.withValues(alpha: 0.1),
+                  AppColors.richGold.withValues(alpha: 0.05),
                 ],
               ),
             ),
@@ -100,9 +102,52 @@ class POSHeader extends StatelessWidget {
           // Material Requests Notification
           IconButton(
             icon: const Icon(Icons.notifications_outlined, size: 20),
-            color: AppColors.softWhite.withOpacity(0.7),
+            color: AppColors.softWhite.withValues(alpha: 0.7),
             onPressed: onNotificationTap,
             tooltip: 'Material Requests',
+          ),
+
+          const SizedBox(width: 8),
+
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.request_quote_outlined, size: 20),
+                color: AppColors.softWhite.withValues(alpha: 0.78),
+                onPressed: onCollectiblesTap,
+                tooltip: 'Pending collectibles',
+              ),
+              if (pendingCollectiblesCount > 0)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 17,
+                      minHeight: 17,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.richGold,
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(color: AppColors.deepBlack, width: 1),
+                    ),
+                    child: Center(
+                      child: Text(
+                        pendingCollectiblesCount > 99
+                            ? '99+'
+                            : '$pendingCollectiblesCount',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.deepBlack,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
 
           const SizedBox(width: 8),

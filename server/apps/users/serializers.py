@@ -1,6 +1,6 @@
 # apps/users/serializers.py
 from rest_framework import serializers
-from .models import User
+from .models import AuditLog, User
 
 DIRECTORY_ROLES = ('projectManager', 'stockManager', 'cashier')
 
@@ -10,6 +10,22 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'full_name', 'role', 'is_active', 'notes', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AuditLog
+        fields = [
+            'id',
+            'at',
+            'module',
+            'category',
+            'summary',
+            'detail',
+            'actor_email',
+            'actor_role',
+        ]
+        read_only_fields = fields
 
 
 class AdminDirectoryUserReadSerializer(serializers.ModelSerializer):

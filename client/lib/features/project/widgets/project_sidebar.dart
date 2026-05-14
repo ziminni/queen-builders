@@ -21,9 +21,7 @@ class ProjectSidebar extends StatelessWidget {
       width: isOpen ? 260 : 80,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          right: BorderSide(color: Color(0xFFD9D9D9), width: 1),
-        ),
+        border: Border(right: BorderSide(color: Color(0xFFD9D9D9), width: 1)),
       ),
       child: Column(
         children: [
@@ -47,12 +45,6 @@ class ProjectSidebar extends StatelessWidget {
                   icon: Icons.business,
                   label: 'Projects',
                   id: 'projects',
-                ),
-                const SizedBox(height: 8),
-                _buildNavItem(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Materials',
-                  id: 'materials',
                 ),
                 const SizedBox(height: 8),
                 _buildNavItem(
@@ -91,10 +83,7 @@ class ProjectSidebar extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0x1AC5A46D),
-                Color(0x1A8C6B3F),
-              ],
+              colors: [Color(0x1AC5A46D), Color(0x1A8C6B3F)],
             ),
             border: Border.all(color: AppColors.richGold, width: 2),
           ),
@@ -160,10 +149,7 @@ class ProjectSidebar extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0x1AC5A46D),
-            Color(0x1A8C6B3F),
-          ],
+          colors: [Color(0x1AC5A46D), Color(0x1A8C6B3F)],
         ),
         border: Border.all(color: AppColors.richGold, width: 2),
       ),
@@ -210,7 +196,9 @@ class ProjectSidebar extends StatelessWidget {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isActive ? AppColors.richGold.withOpacity(0.1) : Colors.transparent,
+            color: isActive
+                ? AppColors.richGold.withValues(alpha: 0.1)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -225,7 +213,9 @@ class ProjectSidebar extends StatelessWidget {
                 Text(
                   label,
                   style: AppTextStyles.labelMedium.copyWith(
-                    color: isActive ? AppColors.richGold : const Color(0xFF2B2B2B),
+                    color: isActive
+                        ? AppColors.richGold
+                        : const Color(0xFF2B2B2B),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

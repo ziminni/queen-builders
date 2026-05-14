@@ -12,18 +12,19 @@ class POSViewModel extends ChangeNotifier {
     AuditLogViewModel? auditLog,
     InventoryRepository? inventoryRepository,
     InventoryViewModel? inventoryViewModel,
-  })  : _auditLog = auditLog,
-        _inventoryRepository = inventoryRepository ?? InventoryRepository(),
-        _inventoryViewModel = inventoryViewModel;
+  }) : _auditLog = auditLog,
+       _inventoryRepository = inventoryRepository ?? InventoryRepository(),
+       _inventoryViewModel = inventoryViewModel;
 
   final AuditLogViewModel? _auditLog;
   final InventoryRepository _inventoryRepository;
   final InventoryViewModel? _inventoryViewModel;
 
-  List<CartItem> _cart = [];
+  final List<CartItem> _cart = [];
   List<Product> _products = [];
   List<Transaction> _transactions = [];
   String _searchQuery = '';
+
   /// When non-null, only products in this category are listed.
   String? _categoryFilter;
 
@@ -34,9 +35,14 @@ class POSViewModel extends ChangeNotifier {
   List<CartItem> get cart => _cart;
   List<Product> get products => _products;
   List<Transaction> get transactions => _transactions;
+
   /// Pay-later / utang sales only.
   List<Transaction> get collectibles =>
       _transactions.where((t) => t.isPayLater).toList();
+  List<Transaction> get pendingCollectibles =>
+      collectibles.where((t) => !t.isCollectiblePaid).toList();
+  List<Transaction> get paidCollectibles =>
+      collectibles.where((t) => t.isCollectiblePaid).toList();
   String get searchQuery => _searchQuery;
   String? get categoryFilter => _categoryFilter;
 
@@ -48,7 +54,8 @@ class POSViewModel extends ChangeNotifier {
         set.add(p.category);
       }
     }
-    final list = set.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    final list = set.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     return list;
   }
 
@@ -60,12 +67,10 @@ class POSViewModel extends ChangeNotifier {
     }
     if (_searchQuery.isEmpty) return list.toList();
     final q = _searchQuery.toLowerCase();
-    return list
-        .where((product) {
-          return product.name.toLowerCase().contains(q) ||
-              product.category.toLowerCase().contains(q);
-        })
-        .toList();
+    return list.where((product) {
+      return product.name.toLowerCase().contains(q) ||
+          product.category.toLowerCase().contains(q);
+    }).toList();
   }
 
   int get cartItemCount => _cart.fold(0, (sum, item) => sum + item.quantity);
@@ -100,8 +105,7 @@ class POSViewModel extends ChangeNotifier {
   Future<void> loadSalesHistory() async {
     try {
       final raw = await _inventoryRepository.fetchPosSalesRaw();
-      _transactions =
-          raw.map((m) => Transaction.fromJson(m)).toList();
+      _transactions = raw.map((m) => Transaction.fromJson(m)).toList();
       notifyListeners();
     } catch (_) {
       // Keep in-memory session history if API unavailable.
@@ -130,20 +134,24 @@ class POSViewModel extends ChangeNotifier {
       return;
     }
 
-    final existingIndex = _cart.indexWhere((item) => item.productId == product.id);
+    final existingIndex = _cart.indexWhere(
+      (item) => item.productId == product.id,
+    );
 
     if (existingIndex != -1) {
       if (_cart[existingIndex].quantity < product.stock) {
         _cart[existingIndex].quantity++;
       }
     } else {
-      _cart.add(CartItem(
-        productId: product.id,
-        name: product.name,
-        price: product.sellingPrice,
-        category: product.category,
-        quantity: 1,
-      ));
+      _cart.add(
+        CartItem(
+          productId: product.id,
+          name: product.name,
+          price: product.sellingPrice,
+          category: product.category,
+          quantity: 1,
+        ),
+      );
     }
     notifyListeners();
   }
@@ -211,11 +219,7 @@ class POSViewModel extends ChangeNotifier {
     if (_cart.isEmpty) return;
 
     final lines = <Map<String, dynamic>>[
-      for (final c in _cart)
-        {
-          'productId': c.productId,
-          'quantity': c.quantity,
-        },
+      for (final c in _cart) {'productId': c.productId, 'quantity': c.quantity},
     ];
 
     final res = await _inventoryRepository.checkoutPos(
@@ -265,6 +269,47 @@ class POSViewModel extends ChangeNotifier {
 
     clearCart();
     notifyListeners();
+  }
+
+  Future<Transaction> markCollectiblePaid(Transaction transaction) async {
+    if (!transaction.isPayLater || transaction.isCollectiblePaid) {
+      return transaction;
+    }
+
+    final id = _serverIdFor(transaction.id);
+    if (id == null) {
+      throw StateError('Cannot update sale ${transaction.id}.');
+    }
+
+    final res = await _inventoryRepository.markPosSalePaid(id);
+    final saleMap = Map<String, dynamic>.from(res['sale'] as Map);
+    final updated = Transaction.fromJson(saleMap);
+    final index = _transactions.indexWhere((t) => t.id == transaction.id);
+    if (index == -1) {
+      _transactions.insert(0, updated);
+    } else {
+      _transactions[index] = updated;
+    }
+    _auditLog?.record(
+      module: AuditLogViewModel.modulePos,
+      category: AuditLogViewModel.categorySales,
+      summary:
+          'Collectible paid · ${updated.id} · ₱${updated.total.toStringAsFixed(2)}',
+      detail: [
+        'Customer: ${updated.customerName ?? 'Walk-in'}',
+        if ((updated.customerPhone ?? '').isNotEmpty)
+          'Contact: ${updated.customerPhone}',
+      ].join('\n'),
+    );
+    notifyListeners();
+    return updated;
+  }
+
+  int? _serverIdFor(String transactionId) {
+    final cleaned = transactionId.startsWith('POS-')
+        ? transactionId.substring(4)
+        : transactionId;
+    return int.tryParse(cleaned);
   }
 
   void loadTransactions(List<Transaction> transactions) {

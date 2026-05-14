@@ -66,6 +66,7 @@ class ProjectManagementViewModel extends ChangeNotifier {
   }
 
   void setActiveNav(String nav) {
+    if (nav == 'materials') return;
     _activeNav = nav;
     notifyListeners();
   }

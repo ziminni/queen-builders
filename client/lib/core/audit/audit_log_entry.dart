@@ -20,4 +20,26 @@ class AuditLogEntry {
     required this.summary,
     this.detail,
   });
+
+  factory AuditLogEntry.fromJson(Map<String, dynamic> json) {
+    final detail = (json['detail'] as String? ?? '').trim();
+    final actorEmail = (json['actor_email'] as String? ?? '').trim();
+    final actorRole = (json['actor_role'] as String? ?? '').trim();
+    final actorLines = [
+      if (actorEmail.isNotEmpty) 'Actor: $actorEmail',
+      if (actorRole.isNotEmpty) 'Actor role: $actorRole',
+    ];
+
+    return AuditLogEntry(
+      id: 'AUD-SERVER-${json['id']}',
+      at: DateTime.parse(json['at'] as String).toLocal(),
+      module: json['module'] as String? ?? 'System',
+      category: json['category'] as String? ?? 'System configuration',
+      summary: json['summary'] as String? ?? 'Audit event',
+      detail: [
+        if (detail.isNotEmpty) detail,
+        if (actorLines.isNotEmpty) actorLines.join('\n'),
+      ].join('\n\n'),
+    );
+  }
 }

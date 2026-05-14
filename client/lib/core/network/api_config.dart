@@ -15,11 +15,13 @@ class ApiConfig {
   }
 
   static const String loginEndpoint = '/auth/login/';
+  static const String logoutEndpoint = '/auth/logout/';
   static const String registerEndpoint = '/auth/register/';
   static const String refreshEndpoint = '/auth/refresh/';
   static const String adminDirectoryUsers = '/admin/directory-users/';
   static String adminDirectoryUserDetail(String id) =>
       '/admin/directory-users/$id/';
+  static const String adminAuditLogs = '/admin/audit-logs/';
   static const String inventoryProducts = '/inventory/products/';
   static String inventoryProductDetail(int id) => '/inventory/products/$id/';
   static const String inventorySuppliers = '/inventory/suppliers/';
@@ -27,6 +29,8 @@ class ApiConfig {
   static const String inventoryReceive = '/inventory/deliveries/receive/';
   static const String inventoryPosCheckout = '/inventory/pos/checkout/';
   static const String inventoryPosSales = '/inventory/pos/sales/';
+  static String inventoryPosSaleMarkPaid(int id) =>
+      '/inventory/pos/sales/$id/mark-paid/';
   static const String projectProjects = '/projectm/projects/';
   static String projectDetail(int id) => '/projectm/projects/$id/';
 

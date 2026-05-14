@@ -47,7 +47,10 @@ class ProfileOverlay extends StatefulWidget {
         );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
-        final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
         return FadeTransition(
           opacity: curved,
           child: ScaleTransition(
@@ -75,10 +78,14 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
   }
 
   Widget _buildContent() {
-    final collectibles = widget.transactions.where((t) => t.isPayLater).toList();
-    final collectibleTotal =
-        collectibles.fold<double>(0, (sum, t) => sum + t.total);
-    final recent = widget.transactions.take(12).toList();
+    final collectibles = widget.transactions
+        .where((t) => t.isPayLater)
+        .toList();
+    final collectibleTotal = collectibles.fold<double>(
+      0,
+      (sum, t) => sum + t.total,
+    );
+    final recent = widget.transactions.take(3).toList();
 
     return SafeArea(
       child: Align(
@@ -90,7 +97,10 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
             margin: const EdgeInsets.only(top: 78, right: 383),
             decoration: BoxDecoration(
               color: const Color(0xFFF2F2F2),
-              border: Border.all(color: AppColors.richGold.withOpacity(0.7), width: 2),
+              border: Border.all(
+                color: AppColors.richGold.withOpacity(0.7),
+                width: 2,
+              ),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -98,10 +108,15 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
               children: [
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                   decoration: const BoxDecoration(
                     color: AppColors.richGold,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(14),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -182,16 +197,25 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                 if (collectibles.isNotEmpty)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                     decoration: BoxDecoration(
                       color: AppColors.richGold.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.richGold.withOpacity(0.35)),
+                      border: Border.all(
+                        color: AppColors.richGold.withOpacity(0.35),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.handshake_outlined, color: AppColors.richGold, size: 22),
+                        Icon(
+                          Icons.handshake_outlined,
+                          color: AppColors.richGold,
+                          size: 22,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -235,11 +259,17 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                       TextButton(
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.richGold,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        onPressed: () => _AllTransactionsDialog.show(context, widget.transactions),
+                        onPressed: () => _AllTransactionsDialog.show(
+                          context,
+                          widget.transactions,
+                        ),
                         child: Text(
                           'See all',
                           style: AppTextStyles.labelLarge.copyWith(
@@ -254,11 +284,13 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                   ),
                 ),
                 Container(
-                  constraints: const BoxConstraints(maxHeight: 320),
+                  constraints: const BoxConstraints(maxHeight: 190),
                   decoration: BoxDecoration(
                     border: Border(
                       top: BorderSide(color: AppColors.border.withOpacity(0.8)),
-                      bottom: BorderSide(color: AppColors.border.withOpacity(0.8)),
+                      bottom: BorderSide(
+                        color: AppColors.border.withOpacity(0.8),
+                      ),
                     ),
                   ),
                   child: recent.isEmpty
@@ -271,13 +303,17 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                                 Icon(
                                   Icons.receipt_long_outlined,
                                   size: 40,
-                                  color: AppColors.textSecondary.withOpacity(0.35),
+                                  color: AppColors.textSecondary.withOpacity(
+                                    0.35,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   'No transactions yet',
                                   style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.textSecondary.withOpacity(0.85),
+                                    color: AppColors.textSecondary.withOpacity(
+                                      0.85,
+                                    ),
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                     decoration: TextDecoration.none,
@@ -320,7 +356,9 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF2C2A2D),
-                        side: BorderSide(color: AppColors.border.withOpacity(0.95)),
+                        side: BorderSide(
+                          color: AppColors.border.withOpacity(0.95),
+                        ),
                         backgroundColor: const Color(0xFFF3F3F3),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -380,7 +418,8 @@ class _AllTransactionsDialogState extends State<_AllTransactionsDialog> {
   static String _shortTime(DateTime d) {
     final h = d.hour.toString().padLeft(2, '0');
     final m = d.minute.toString().padLeft(2, '0');
-    return '${d.month}/${d.day}/' '${d.year} $h:$m';
+    return '${d.month}/${d.day}/'
+        '${d.year} $h:$m';
   }
 
   List<Transaction> get _sorted {
@@ -498,7 +537,10 @@ class _AllTransactionsDialogState extends State<_AllTransactionsDialog> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: AppColors.textSecondary.withOpacity(0.9)),
+                    icon: Icon(
+                      Icons.close,
+                      color: AppColors.textSecondary.withOpacity(0.9),
+                    ),
                     tooltip: 'Close',
                   ),
                 ],
@@ -544,7 +586,9 @@ class _AllTransactionsDialogState extends State<_AllTransactionsDialog> {
                               icon: Icon(
                                 Icons.clear,
                                 size: 20,
-                                color: AppColors.textSecondary.withOpacity(0.85),
+                                color: AppColors.textSecondary.withOpacity(
+                                  0.85,
+                                ),
                               ),
                               tooltip: 'Clear',
                             ),
@@ -552,15 +596,24 @@ class _AllTransactionsDialogState extends State<_AllTransactionsDialog> {
                       fillColor: const Color(0xFFF8F8F8),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.border, width: 1),
+                        borderSide: const BorderSide(
+                          color: AppColors.border,
+                          width: 1,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.border, width: 1),
+                        borderSide: const BorderSide(
+                          color: AppColors.border,
+                          width: 1,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.richGold, width: 2),
+                        borderSide: const BorderSide(
+                          color: AppColors.richGold,
+                          width: 2,
+                        ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -584,7 +637,10 @@ class _AllTransactionsDialogState extends State<_AllTransactionsDialog> {
                       const SizedBox(width: 8),
                       _filterChip(scope: _TxnScope.paid, label: 'Paid'),
                       const SizedBox(width: 8),
-                      _filterChip(scope: _TxnScope.collectible, label: 'Collectible'),
+                      _filterChip(
+                        scope: _TxnScope.collectible,
+                        label: 'Collectible',
+                      ),
                     ],
                   ),
                 ],
@@ -611,10 +667,10 @@ class _AllTransactionsDialogState extends State<_AllTransactionsDialog> {
                               _searchCtrl.text.trim().isNotEmpty
                                   ? 'No matches for "${_searchCtrl.text.trim()}"'
                                   : _scope == _TxnScope.all
-                                      ? 'No transactions yet'
-                                      : _scope == _TxnScope.paid
-                                          ? 'No paid sales in this list'
-                                          : 'No collectibles in this list',
+                                  ? 'No transactions yet'
+                                  : _scope == _TxnScope.paid
+                                  ? 'No paid sales in this list'
+                                  : 'No collectibles in this list',
                               style: AppTextStyles.bodyMedium.copyWith(
                                 color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w500,
@@ -663,10 +719,7 @@ class _TransactionRow extends StatelessWidget {
   final Transaction transaction;
   final String Function(DateTime) shortTime;
 
-  const _TransactionRow({
-    required this.transaction,
-    required this.shortTime,
-  });
+  const _TransactionRow({required this.transaction, required this.shortTime});
 
   @override
   Widget build(BuildContext context) {
@@ -674,13 +727,14 @@ class _TransactionRow extends StatelessWidget {
     final name = (t.customerName != null && t.customerName!.isNotEmpty)
         ? t.customerName!
         : 'Walk-in';
-    final extra = t.isPayLater && t.customerPhone != null && t.customerPhone!.isNotEmpty
+    final extra =
+        t.isPayLater && t.customerPhone != null && t.customerPhone!.isNotEmpty
         ? ' · ${t.customerPhone}'
         : (!t.isPayLater &&
-                t.customerPhone != null &&
-                t.customerPhone!.isNotEmpty)
-            ? ' · ${t.customerPhone}'
-            : '';
+              t.customerPhone != null &&
+              t.customerPhone!.isNotEmpty)
+        ? ' · ${t.customerPhone}'
+        : '';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -729,7 +783,10 @@ class _TransactionRow extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: t.isPayLater
                             ? AppColors.richGold.withOpacity(0.2)
@@ -741,7 +798,9 @@ class _TransactionRow extends StatelessWidget {
                         style: AppTextStyles.labelSmall.copyWith(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          color: t.isPayLater ? AppColors.deepBlack : AppColors.textSecondary,
+                          color: t.isPayLater
+                              ? AppColors.deepBlack
+                              : AppColors.textSecondary,
                           decoration: TextDecoration.none,
                         ),
                       ),
@@ -769,4 +828,3 @@ class _TransactionRow extends StatelessWidget {
     );
   }
 }
-

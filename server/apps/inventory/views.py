@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -185,6 +186,27 @@ class PosSaleListView(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = SaleOutSerializer
     queryset = Sale.objects.prefetch_related("lines").all()
+
+
+class PosSaleMarkPaidView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request, pk):
+        try:
+            sale = Sale.objects.prefetch_related("lines").get(pk=pk, is_pay_later=True)
+        except Sale.DoesNotExist:
+            return Response(
+                {"detail": "Collectible sale not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if sale.paid_at is None:
+            sale.paid_at = timezone.now()
+            sale.payment_method = "Paid Collectible"
+            sale.save(update_fields=["paid_at", "payment_method"])
+
+        return Response({"sale": SaleOutSerializer(sale).data})
 
 
 class StockReceiptListView(generics.ListAPIView):

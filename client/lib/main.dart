@@ -33,15 +33,19 @@ Future<void> main(List<String> args) async {
     await windowManager.setSize(const Size(1320, 820));
     await windowManager.center();
     await windowManager.setResizable(true);
-    final label = startup.projectName.isEmpty ? 'Project ${startup.projectId}' : startup.projectName;
+    final label = startup.projectName.isEmpty
+        ? 'Project ${startup.projectId}'
+        : startup.projectName;
     await windowManager.setTitle('Gantt — $label');
-    runApp(ProjectGanttStandaloneApp(
-      projectId: startup.projectId!,
-      projectName: startup.projectName,
-      scheduleTasks: startup.scheduleTasks,
-      projectStartDate: startup.projectStartDate,
-      projectDeadline: startup.projectDeadline,
-    ));
+    runApp(
+      ProjectGanttStandaloneApp(
+        projectId: startup.projectId!,
+        projectName: startup.projectName,
+        scheduleTasks: startup.scheduleTasks,
+        projectStartDate: startup.projectStartDate,
+        projectDeadline: startup.projectDeadline,
+      ),
+    );
     return;
   }
 
@@ -53,16 +57,16 @@ Future<void> main(List<String> args) async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => AuditLogViewModel()),
         ChangeNotifierProvider(
-          create: (ctx) => AdminUsersViewModel(
-            auditLog: ctx.read<AuditLogViewModel>(),
-          ),
+          create: (ctx) =>
+              AuthViewModel(auditLog: ctx.read<AuditLogViewModel>()),
         ),
-        Provider<InventoryRepository>(
-          create: (_) => InventoryRepository(),
+        ChangeNotifierProvider(
+          create: (ctx) =>
+              AdminUsersViewModel(auditLog: ctx.read<AuditLogViewModel>()),
         ),
+        Provider<InventoryRepository>(create: (_) => InventoryRepository()),
         ChangeNotifierProvider(
           create: (ctx) => InventoryViewModel(
             auditLog: ctx.read<AuditLogViewModel>(),

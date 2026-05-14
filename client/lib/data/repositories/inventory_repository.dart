@@ -40,6 +40,9 @@ class InventoryRepository {
   Future<List<Map<String, dynamic>>> fetchPosSalesRaw() =>
       _remote.fetchPosSalesRaw();
 
+  Future<Map<String, dynamic>> markPosSalePaid(int id) =>
+      _remote.markPosSalePaid(id);
+
   Future<void> createProduct(NewProduct n) => _remote.createProduct(n);
 
   Future<void> updateProduct(int id, NewProduct n) =>

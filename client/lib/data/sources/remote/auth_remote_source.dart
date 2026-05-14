@@ -6,9 +6,9 @@ import '../../models/user_model.dart';
 
 class AuthRemoteSource {
   final ApiService _apiService;
-  
+
   AuthRemoteSource(this._apiService);
-  
+
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await _apiService.dio.post(
@@ -25,12 +25,28 @@ class AuthRemoteSource {
     } on DioException catch (e) {
       return {
         'success': false,
-        'error': e.response?.data['error'] ?? 'Login failed',
+        'error': _errorMessage(e.response?.data, fallback: 'Login failed'),
       };
     }
   }
-  
-  Future<Map<String, dynamic>> register(String email, String fullName, String password, String role) async {
+
+  Future<void> logout({String? email, String? role, String? name}) async {
+    try {
+      await _apiService.dio.post(
+        ApiConfig.logoutEndpoint,
+        data: {'email': email, 'role': role, 'name': name},
+      );
+    } on DioException {
+      // Logout should not be blocked by movement-log recording failure.
+    }
+  }
+
+  Future<Map<String, dynamic>> register(
+    String email,
+    String fullName,
+    String password,
+    String role,
+  ) async {
     try {
       final response = await _apiService.dio.post(
         ApiConfig.registerEndpoint,
@@ -41,15 +57,26 @@ class AuthRemoteSource {
           'role': role,
         },
       );
-      return {
-        'success': true,
-        'user': UserModel.fromJson(response.data),
-      };
+      return {'success': true, 'user': UserModel.fromJson(response.data)};
     } on DioException catch (e) {
       return {
         'success': false,
-        'error': e.response?.data['error'] ?? 'Registration failed',
+        'error': _errorMessage(
+          e.response?.data,
+          fallback: 'Registration failed',
+        ),
       };
     }
+  }
+
+  String _errorMessage(dynamic data, {required String fallback}) {
+    if (data is Map) {
+      final error = data['error'] ?? data['detail'];
+      if (error != null) return error.toString();
+    }
+    if (data is String && data.trim().isNotEmpty) {
+      return data.trim();
+    }
+    return fallback;
   }
 }

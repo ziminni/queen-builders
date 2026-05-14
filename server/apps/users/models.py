@@ -42,3 +42,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     def __str__(self):
         return f"{self.email} ({self.role})"
+
+
+class AuditLog(models.Model):
+    at = models.DateTimeField(auto_now_add=True)
+    module = models.CharField(max_length=64)
+    category = models.CharField(max_length=128)
+    summary = models.CharField(max_length=255)
+    detail = models.TextField(blank=True, default='')
+    actor_email = models.EmailField(blank=True, default='')
+    actor_role = models.CharField(max_length=64, blank=True, default='')
+
+    class Meta:
+        ordering = ['-at']
+
+    def __str__(self):
+        return f"{self.at:%Y-%m-%d %H:%M} · {self.module} · {self.summary}"

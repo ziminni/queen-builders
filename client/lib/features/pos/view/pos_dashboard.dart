@@ -13,6 +13,7 @@ import '../widgets/cart_item_widget.dart';
 import '../widgets/checkout_flow_dialogs.dart';
 import '../widgets/pos_checkout_feedback.dart';
 import '../widgets/checkout_section.dart';
+import '../widgets/collectibles_dialog.dart';
 import '../widgets/profile_overlay.dart';
 
 class POSDashboard extends StatefulWidget {
@@ -48,8 +49,12 @@ class _POSDashboardState extends State<POSDashboard> {
                     // Header
                     POSHeader(
                       onNotificationTap: () {},
+                      onCollectiblesTap: () =>
+                          _showCollectiblesDialog(context, viewModel),
                       onProfileTap: () => _showProfileMenu(context, viewModel),
                       notificationCount: 0,
+                      pendingCollectiblesCount:
+                          viewModel.pendingCollectibles.length,
                     ),
 
                     // Search Bar
@@ -59,9 +64,7 @@ class _POSDashboardState extends State<POSDashboard> {
                         !viewModel.catalogLoading)
                       _buildCatalogErrorBanner(viewModel),
                     // Product Grid
-                    Expanded(
-                      child: _buildProductGrid(viewModel),
-                    ),
+                    Expanded(child: _buildProductGrid(viewModel)),
                   ],
                 ),
               ),
@@ -82,7 +85,11 @@ class _POSDashboardState extends State<POSDashboard> {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         child: Row(
           children: [
-            Icon(Icons.cloud_off_outlined, color: Colors.orange.shade800, size: 20),
+            Icon(
+              Icons.cloud_off_outlined,
+              color: Colors.orange.shade800,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -115,9 +122,7 @@ class _POSDashboardState extends State<POSDashboard> {
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: AppColors.border),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -146,7 +151,10 @@ class _POSDashboardState extends State<POSDashboard> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.richGold, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.richGold,
+                  width: 2,
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -240,14 +248,12 @@ class _POSDashboardState extends State<POSDashboard> {
             Icon(
               Icons.inventory_2_outlined,
               size: 64,
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
               'No products found',
-              style: AppTextStyles.h4.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: AppTextStyles.h4.copyWith(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -257,9 +263,13 @@ class _POSDashboardState extends State<POSDashboard> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final pad = 24.0 * 2;
-        final usableW = (constraints.maxWidth - pad).clamp(1.0, double.infinity);
-        final maxExtent =
-            usableW < 520 ? usableW / 2 - 12 : (usableW < 900 ? 220.0 : 260.0);
+        final usableW = (constraints.maxWidth - pad).clamp(
+          1.0,
+          double.infinity,
+        );
+        final maxExtent = usableW < 520
+            ? usableW / 2 - 12
+            : (usableW < 900 ? 220.0 : 260.0);
 
         return GridView.builder(
           padding: const EdgeInsets.all(24),
@@ -286,9 +296,7 @@ class _POSDashboardState extends State<POSDashboard> {
       width: 384,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          left: BorderSide(color: AppColors.border),
-        ),
+        border: Border(left: BorderSide(color: AppColors.border)),
       ),
       child: Column(
         children: [
@@ -296,9 +304,7 @@ class _POSDashboardState extends State<POSDashboard> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: AppColors.border),
-              ),
+              border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,7 +356,7 @@ class _POSDashboardState extends State<POSDashboard> {
                         Icon(
                           Icons.shopping_cart_outlined,
                           size: 64,
-                          color: AppColors.textSecondary.withOpacity(0.3),
+                          color: AppColors.textSecondary.withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -376,9 +382,12 @@ class _POSDashboardState extends State<POSDashboard> {
                       final item = viewModel.cart[index];
                       return CartItemWidget(
                         item: item,
-                        onIncrement: () => viewModel.updateQuantity(item.productId, 1),
-                        onDecrement: () => viewModel.updateQuantity(item.productId, -1),
-                        onRemove: () => viewModel.removeFromCart(item.productId),
+                        onIncrement: () =>
+                            viewModel.updateQuantity(item.productId, 1),
+                        onDecrement: () =>
+                            viewModel.updateQuantity(item.productId, -1),
+                        onRemove: () =>
+                            viewModel.removeFromCart(item.productId),
                       );
                     },
                   ),
@@ -405,31 +414,32 @@ class _POSDashboardState extends State<POSDashboard> {
       subtotal: viewModel.subtotal,
       tax: viewModel.tax,
       total: viewModel.total,
-      onConfirm: ({
-        required isPayLater,
-        required customerName,
-        required contactNumber,
-        String? customerAddress,
-      }) async {
-        await showPOSCheckoutFeedback(
-          context,
-          isPayLater: isPayLater,
-          run: () async {
-            if (isPayLater) {
-              await viewModel.completePayLaterSale(
-                customerName: customerName,
-                customerAddress: customerAddress ?? '',
-                contactNumber: contactNumber,
-              );
-            } else {
-              await viewModel.completeCashSale(
-                customerName: customerName,
-                customerPhone: contactNumber,
-              );
-            }
+      onConfirm:
+          ({
+            required isPayLater,
+            required customerName,
+            required contactNumber,
+            String? customerAddress,
+          }) async {
+            await showPOSCheckoutFeedback(
+              context,
+              isPayLater: isPayLater,
+              run: () async {
+                if (isPayLater) {
+                  await viewModel.completePayLaterSale(
+                    customerName: customerName,
+                    customerAddress: customerAddress ?? '',
+                    contactNumber: contactNumber,
+                  );
+                } else {
+                  await viewModel.completeCashSale(
+                    customerName: customerName,
+                    customerPhone: contactNumber,
+                  );
+                }
+              },
+            );
           },
-        );
-      },
     );
   }
 
@@ -443,10 +453,10 @@ class _POSDashboardState extends State<POSDashboard> {
           context,
           isPayLater: true,
           run: () => viewModel.completePayLaterSale(
-                customerName: name,
-                customerAddress: address,
-                contactNumber: contact,
-              ),
+            customerName: name,
+            customerAddress: address,
+            contactNumber: contact,
+          ),
         );
       },
     );
@@ -464,16 +474,19 @@ class _POSDashboardState extends State<POSDashboard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.button.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               viewModel.clearCart();
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: Text('Clear', style: AppTextStyles.button),
           ),
         ],
@@ -489,6 +502,18 @@ class _POSDashboardState extends State<POSDashboard> {
       userInitials: 'MS',
       transactions: viewModel.transactions,
       onLogout: _handleLogout,
+    );
+  }
+
+  Future<void> _showCollectiblesDialog(
+    BuildContext context,
+    POSViewModel viewModel,
+  ) {
+    return CollectiblesDialog.show(
+      context,
+      pending: viewModel.pendingCollectibles,
+      paid: viewModel.paidCollectibles,
+      onMarkPaid: viewModel.markCollectiblePaid,
     );
   }
 

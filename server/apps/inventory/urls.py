@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     PosCheckoutStockView,
+    PosSaleMarkPaidView,
     PosSaleListView,
     ProductDetailView,
     ProductListCreateView,
@@ -18,4 +19,5 @@ urlpatterns = [
     path("deliveries/receive/", ReceiveDeliveryView.as_view(), name="inventory-receive"),
     path("pos/checkout/", PosCheckoutStockView.as_view(), name="pos-checkout"),
     path("pos/sales/", PosSaleListView.as_view(), name="pos-sales"),
+    path("pos/sales/<int:pk>/mark-paid/", PosSaleMarkPaidView.as_view(), name="pos-sale-mark-paid"),
 ]

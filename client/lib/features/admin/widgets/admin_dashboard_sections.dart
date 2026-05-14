@@ -19,7 +19,8 @@ class AdminUserManagementContent extends StatefulWidget {
       _AdminUserManagementContentState();
 }
 
-class _AdminUserManagementContentState extends State<AdminUserManagementContent> {
+class _AdminUserManagementContentState
+    extends State<AdminUserManagementContent> {
   @override
   void initState() {
     super.initState();
@@ -89,7 +90,11 @@ class _AdminUserManagementContentState extends State<AdminUserManagementContent>
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.error_outline, color: AppColors.error, size: 22),
+                        Icon(
+                          Icons.error_outline,
+                          color: AppColors.error,
+                          size: 22,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -319,7 +324,9 @@ class _UserRow extends StatelessWidget {
                 child: IconButton(
                   icon: Icon(
                     user.active ? Icons.toggle_on : Icons.toggle_off,
-                    color: user.active ? AppColors.success : AppColors.textSecondary,
+                    color: user.active
+                        ? AppColors.success
+                        : AppColors.textSecondary,
                     size: 32,
                   ),
                   onPressed: () async {
@@ -359,7 +366,9 @@ class _UserRow extends StatelessWidget {
                   user.active ? 'Active' : 'Inactive',
                   style: AppTextStyles.labelSmall.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: user.active ? AppColors.success : AppColors.textSecondary,
+                    color: user.active
+                        ? AppColors.success
+                        : AppColors.textSecondary,
                     fontSize: 10,
                   ),
                 ),
@@ -418,7 +427,11 @@ class _AdminAuditLogsContentState extends State<AdminAuditLogsContent> {
       case AuditLogViewModel.moduleAdmin:
         return [_all, AuditLogViewModel.categoryUsers];
       case AuditLogViewModel.moduleSystem:
-        return [_all, AuditLogViewModel.categorySystem];
+        return [
+          _all,
+          AuditLogViewModel.categoryMovement,
+          AuditLogViewModel.categorySystem,
+        ];
       default:
         return [_all];
     }
@@ -455,7 +468,7 @@ class _AdminAuditLogsContentState extends State<AdminAuditLogsContent> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Events are separated by module, then by category. Inventory register and receiving flows write here automatically.',
+                'Events are separated by module, then by category. User management, login/logout movement, inventory, and POS flows write here automatically.',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -483,7 +496,8 @@ class _AdminAuditLogsContentState extends State<AdminAuditLogsContent> {
                   ),
                   _FilterChip(
                     label: AuditLogViewModel.moduleInventory,
-                    selected: _moduleFilter == AuditLogViewModel.moduleInventory,
+                    selected:
+                        _moduleFilter == AuditLogViewModel.moduleInventory,
                     onSelect: () => setState(() {
                       _moduleFilter = AuditLogViewModel.moduleInventory;
                       _categoryFilter = _all;
@@ -767,7 +781,9 @@ class AdminSystemManagementContent extends StatelessWidget {
               onChanged: (_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Toggle stored when backend policy service exists.'),
+                    content: Text(
+                      'Toggle stored when backend policy service exists.',
+                    ),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -783,7 +799,9 @@ class AdminSystemManagementContent extends StatelessWidget {
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Export audit — connect object storage or email relay.'),
+                    content: Text(
+                      'Export audit — connect object storage or email relay.',
+                    ),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -807,7 +825,10 @@ class AdminSystemManagementContent extends StatelessWidget {
                     final ok = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: Text('Clear audit log?', style: AppTextStyles.h3),
+                        title: Text(
+                          'Clear audit log?',
+                          style: AppTextStyles.h3,
+                        ),
                         content: Text(
                           'This removes all entries from the current session trail. Continue?',
                           style: AppTextStyles.bodyMedium,
@@ -905,9 +926,7 @@ class AdminSystemManagementContent extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(v, style: AppTextStyles.bodySmall),
-          ),
+          Expanded(child: Text(v, style: AppTextStyles.bodySmall)),
         ],
       ),
     );
