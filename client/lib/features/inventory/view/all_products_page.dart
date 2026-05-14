@@ -7,9 +7,10 @@ import '../../../data/models/product.dart';
 import '../../../routes/routes.dart';
 import '../../auth/viewmodel/auth_viewmodel.dart';
 import '../viewmodels/inventory_viewmodel.dart';
-import '../models/sample_products.dart';
-import '../widgets/inventory_sidebar.dart';
-import '../widgets/inventory_header.dart';
+import '../models/inventory_categories.dart';
+import '../widgets/inventory_manage_products_menu_button.dart';
+import '../widgets/inventory_page_layout.dart';
+import '../widgets/receive_supplier_delivery_dialog.dart';
 
 class AllProductsPage extends StatefulWidget {
   const AllProductsPage({super.key});
@@ -19,12 +20,30 @@ class AllProductsPage extends StatefulWidget {
 }
 
 class _AllProductsPageState extends State<AllProductsPage> {
+  /// Avoids re-applying route-driven category when only ViewModel changes.
+  String? _lastSyncedInventoryRouteKey;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<InventoryViewModel>().initializeProducts(getSampleInventoryProducts());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final vm = context.read<InventoryViewModel>();
+      await vm.loadProductsFromApi();
+      if (!mounted) return;
+      vm.setActiveNav('inventory');
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final uri = GoRouterState.of(context).uri;
+    final routeKey = uri.hasQuery ? '${uri.path}?${uri.query}' : uri.path;
+    if (routeKey == _lastSyncedInventoryRouteKey) return;
+    _lastSyncedInventoryRouteKey = routeKey;
+    final cat = uri.queryParameters['category'] ?? '';
+    context.read<InventoryViewModel>().setSelectedCategory(cat);
   }
 
   Future<void> _handleLogout() async {
@@ -36,81 +55,32 @@ class _AllProductsPageState extends State<AllProductsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<InventoryViewModel>(
-      builder: (context, viewModel, _) {
-        return Scaffold(
-          backgroundColor: const Color(0xFFFAFAFA),
-          body: Row(
-            children: [
-              // Sidebar
-              InventorySidebar(
-                activeNav: viewModel.activeNav,
-                isOpen: viewModel.sidebarOpen,
-                onNavChange: (nav) {
-                  viewModel.setActiveNav(nav);
-                  if (nav == 'dashboard') {
-                    context.go(AppRoutes.stockManager);
-                  } else if (nav == 'inventory') {
-                    // Already in all products page
-                  }
-                },
-                onLogout: _handleLogout,
+    return InventoryPageLayout(
+      headerTitle: 'Stock Manager Dashboard',
+      onLogout: () => _handleLogout(),
+      body: Consumer<InventoryViewModel>(
+        builder: (context, viewModel, _) {
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPageHeader(viewModel),
+                  const SizedBox(height: 32),
+                  _buildFiltersBar(context, viewModel),
+                  const SizedBox(height: 24),
+                  _buildProductsTable(viewModel),
+                ],
               ),
-
-              // Main Content
-              Expanded(
-                child: Column(
-                  children: [
-                    // Header
-                    InventoryHeader(
-                      title: 'Stock Manager Dashboard',
-                      searchQuery: viewModel.searchQuery,
-                      onSearchChanged: (query) {
-                        viewModel.setSearchQuery(query);
-                      },
-                      onMenuToggle: () {
-                        viewModel.toggleSidebar();
-                      },
-                      onNotificationTap: () {},
-                      onProfileTap: () {},
-                    ),
-
-                    // Main Content Area with Page Title & Action Buttons
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Page Title & Action Buttons Section
-                              _buildPageHeader(),
-
-                              const SizedBox(height: 32),
-
-                              // Filters Bar
-                              _buildFiltersBar(viewModel),
-
-                              const SizedBox(height: 24),
-
-                              // Products Table
-                              _buildProductsTable(viewModel),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildPageHeader() {
+  Widget _buildPageHeader(InventoryViewModel viewModel) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -129,7 +99,9 @@ class _AllProductsPageState extends State<AllProductsPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Manage products, stock levels, and supplier deliveries',
+                viewModel.selectedCategory.isEmpty
+                    ? 'Manage products, stock levels, and supplier deliveries'
+                    : 'Materials in "${viewModel.selectedCategory}". Use the search bar above and the filters below to narrow the list.',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                   fontSize: 14,
@@ -150,7 +122,35 @@ class _AllProductsPageState extends State<AllProductsPage> {
             // Receive Delivery Button
             OutlinedButton.icon(
               onPressed: () {
-                // Handle receive delivery
+                showDialog<void>(
+                  context: context,
+                  builder: (dialogContext) => ReceiveSupplierDeliveryDialog(
+                    products: viewModel.products,
+                    onConfirm: (supplier, supplierCode, invoice, date,
+                        receivedBy, notes, warehouseLocation, items) async {
+                      try {
+                        await viewModel.applySupplierDelivery(
+                          supplierName: supplier,
+                          supplierCode: supplierCode,
+                          warehouseLocation: warehouseLocation,
+                          invoiceNumber: invoice,
+                          receivedBy: receivedBy,
+                          notes: notes,
+                          items: items,
+                        );
+                      } catch (_) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Could not record delivery. Check the server.',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                );
               },
               icon: const Icon(Icons.local_shipping, size: 18),
               label: Text(
@@ -170,35 +170,15 @@ class _AllProductsPageState extends State<AllProductsPage> {
               ),
             ),
 
-            // Add Product Button
-            ElevatedButton.icon(
-              onPressed: () {
-                // Handle add product
-              },
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(
-                'Add Product',
-                style: AppTextStyles.button.copyWith(fontSize: 13),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.richGold,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
+            const InventoryManageProductsMenuButton(),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildFiltersBar(InventoryViewModel viewModel) {
-    final categories = ['', 'Paint & Finishing', 'Cement', 'Aggregates', 'Steel', 'Wood',
-      'Nails & Fasteners', 'Blocks', 'Roofing', 'Electrical', 'Plumbing', 'Tools', 'Safety Equipment'];
+  Widget _buildFiltersBar(BuildContext context, InventoryViewModel viewModel) {
+    final categories = ['', ...kInventoryProductCategories];
     final brands = ['', ...viewModel.products.map((p) => p.brand).toSet().toList()..sort()];
     final statuses = ['', 'OK', 'LOW', 'CRITICAL'];
     final suppliers = ['', ...viewModel.products.map((p) => p.supplierCode ?? '').where((s) => s.isNotEmpty).toSet().toList()..sort()];
@@ -269,7 +249,13 @@ class _AllProductsPageState extends State<AllProductsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               OutlinedButton(
-                onPressed: () => viewModel.clearFilters(),
+                onPressed: () {
+                  viewModel.clearFilters();
+                  final uri = GoRouterState.of(context).uri;
+                  if (uri.queryParameters.isNotEmpty) {
+                    context.go(AppRoutes.inventoryProducts);
+                  }
+                },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   side: const BorderSide(color: AppColors.border, width: 2),
@@ -544,11 +530,16 @@ class _AllProductsPageState extends State<AllProductsPage> {
                 textAlign: TextAlign.right,
               ),
             ),
-            // Supplier
+            // Supplier (table column shows code when known; else supplier name)
             Expanded(
               flex: 2,
               child: Text(
-                product.supplierCode ?? '-',
+                (product.supplierCode != null &&
+                        product.supplierCode!.isNotEmpty)
+                    ? product.supplierCode!
+                    : (product.supplier.isNotEmpty
+                        ? product.supplier
+                        : '-'),
                 style: AppTextStyles.bodySmall.copyWith(fontSize: 11),
               ),
             ),

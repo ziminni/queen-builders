@@ -2,475 +2,232 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../auth/viewmodel/auth_viewmodel.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_text_styles.dart';
 import '../../../routes/routes.dart';
+import '../../auth/viewmodel/auth_viewmodel.dart';
+import '../models/admin_menu_item.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Queen Builders Admin',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        scaffoldBackgroundColor: Colors.grey[50],
-      ),
-      home: const AdminHomePage(),
-    );
-  }
-}
-
-class AdminHomePage extends StatefulWidget {
-  const AdminHomePage({super.key});
-
-  @override
-  State<AdminHomePage> createState() => _AdminHomePageState();
-}
-
-class _AdminHomePageState extends State<AdminHomePage> {
-  bool _isSidebarExpanded = true;
-  int _selectedIndex = 0;
-
-  // Menu items configuration
-  final List<MenuItem> _menuItems = [
-    MenuItem(icon: Icons.dashboard_outlined, label: 'Dashboard', index: 0),
-    MenuItem(icon: Icons.build_outlined, label: 'Projects', index: 1),
-    MenuItem(icon: Icons.inventory_2_outlined, label: 'Inventory', index: 2),
-    MenuItem(icon: Icons.people_outline, label: 'Staff', index: 3),
-    MenuItem(icon: Icons.bar_chart_outlined, label: 'Reports', index: 4),
-    MenuItem(icon: Icons.settings_outlined, label: 'Settings', index: 5),
-  ];
-
-  void _toggleSidebar() {
-    setState(() {
-      _isSidebarExpanded = !_isSidebarExpanded;
-    });
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          // Admin Sidebar Widget
-          AdminSidebar(
-            isExpanded: _isSidebarExpanded,
-            selectedIndex: _selectedIndex,
-            menuItems: _menuItems,
-            onItemTapped: _onItemTapped,
-          ),
-          // Main Content Area
-          Expanded(
-            child: Column(
-              children: [
-                // Header with toggle button
-                HeaderWidget(
-                  isSidebarExpanded: _isSidebarExpanded,
-                  onToggleSidebar: _toggleSidebar,
-                ),
-                // Dynamic content based on selected menu item
-                Expanded(child: _buildMainContent()),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMainContent() {
-    switch (_selectedIndex) {
-      case 0:
-        return const DashboardContent();
-      case 1:
-        return const Center(child: Text('Projects Content'));
-      case 2:
-        return const Center(child: Text('Inventory Content'));
-      case 3:
-        return const Center(child: Text('Staff Content'));
-      case 4:
-        return const Center(child: Text('Reports Content'));
-      case 5:
-        return const Center(child: Text('Settings Content'));
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-}
-
-// ========== ADMIN SIDEBAR WIDGET ==========
 class AdminSidebar extends StatelessWidget {
   final bool isExpanded;
   final int selectedIndex;
-  final List<MenuItem> menuItems;
-  final Function(int) onItemTapped;
+  final List<AdminMenuItem> menuItems;
+  final ValueChanged<int> onItemSelected;
 
   const AdminSidebar({
     super.key,
     required this.isExpanded,
     required this.selectedIndex,
     required this.menuItems,
-    required this.onItemTapped,
+    required this.onItemSelected,
   });
+
+  static const List<AdminMenuItem> defaultMenuItems = [
+    AdminMenuItem(icon: Icons.manage_accounts_outlined, label: 'User management', index: 0),
+    AdminMenuItem(icon: Icons.fact_check_outlined, label: 'Audit logs', index: 1),
+    AdminMenuItem(icon: Icons.tune_outlined, label: 'System management', index: 2),
+  ];
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Logout', style: AppTextStyles.h3),
+        content: Text('Sign out of the admin portal?', style: AppTextStyles.bodyMedium),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Logout', style: AppTextStyles.button.copyWith(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+    await context.read<AuthViewModel>().logout();
+    if (context.mounted) context.go(AppRoutes.login);
+  }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      width: isExpanded ? 260 : 80,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      width: isExpanded ? 260 : 76,
       decoration: BoxDecoration(
-        color: const Color(0xFF1A2A3A), // Dark admin sidebar color
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(2, 0),
-          ),
-        ],
+        color: AppColors.deepBlack,
+        border: Border(
+          right: BorderSide(color: AppColors.border.withValues(alpha: 0.25)),
+        ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo / Brand Area
-          Container(
-            height: 70,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                // App Icon
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.amber[700],
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.business_center,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                if (isExpanded) ...[
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'QUEEN BUILDERS',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const Divider(color: Colors.white24, height: 1),
-          const SizedBox(height: 20),
-          // Menu Items
+          _brand(context),
+          const Divider(height: 1, color: Colors.white24),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               itemCount: menuItems.length,
-              itemBuilder: (context, index) {
-                final item = menuItems[index];
-                final isSelected = selectedIndex == item.index;
-
-                return _buildMenuItem(
-                  icon: item.icon,
-                  label: item.label,
-                  isSelected: isSelected,
-                  onTap: () => onItemTapped(item.index),
-                );
-              },
-            ),
-          ),
-          // Logout Button at Bottom
-          const Divider(color: Colors.white24, height: 1),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: _buildMenuItem(
-              icon: Icons.logout,
-              label: 'Logout',
-              isSelected: false,
-              onTap: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Logout'),
-                    content: const Text('Are you sure you want to logout?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text(
-                          'Logout',
-                          style: TextStyle(color: Colors.red),
+              itemBuilder: (context, i) {
+                final item = menuItems[i];
+                final selected = selectedIndex == item.index;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => onItemSelected(item.index),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isExpanded ? 14 : 10,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? AppColors.richGold.withValues(alpha: 0.18)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border(
+                            left: BorderSide(
+                              color: selected ? AppColors.richGold : Colors.transparent,
+                              width: 3,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              item.icon,
+                              size: 22,
+                              color: selected
+                                  ? AppColors.richGold
+                                  : AppColors.softWhite.withValues(alpha: 0.65),
+                            ),
+                            if (isExpanded) ...[
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  item.label,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: selected
+                                        ? AppColors.richGold
+                                        : AppColors.softWhite.withValues(alpha: 0.88),
+                                    fontWeight:
+                                        selected ? FontWeight.w600 : FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 );
-
-                if (confirm == true) {
-                  await context.read<AuthViewModel>().logout();
-                  if (context.mounted) {
-                    context.go(AppRoutes.login);
-                  }
-                }
               },
             ),
           ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.shade800 : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : Colors.grey[400],
-              size: 22,
-            ),
-            if (isExpanded) ...[
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey[400],
-                    fontSize: 14,
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
+          const Divider(height: 1, color: Colors.white24),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+            child: Tooltip(
+              message: isExpanded ? '' : 'Logout',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _confirmLogout(context),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isExpanded ? 14 : 10,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.logout,
+                          size: 22,
+                          color: AppColors.softWhite.withValues(alpha: 0.65),
+                        ),
+                        if (isExpanded) ...[
+                          const SizedBox(width: 12),
+                          Text(
+                            'Logout',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.softWhite.withValues(alpha: 0.75),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ========== HEADER WIDGET WITH TOGGLE BUTTON ==========
-class HeaderWidget extends StatelessWidget {
-  final bool isSidebarExpanded;
-  final VoidCallback onToggleSidebar;
-
-  const HeaderWidget({
-    super.key,
-    required this.isSidebarExpanded,
-    required this.onToggleSidebar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _brand(BuildContext context) {
+    return Container(
+      height: 72,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.centerLeft,
       child: Row(
         children: [
-          // Toggle button on the very top left
-          IconButton(
-            onPressed: onToggleSidebar,
-            icon: Icon(
-              isSidebarExpanded ? Icons.menu_open : Icons.menu,
-              size: 28,
-              color: const Color(0xFF1A2A3A),
-            ),
-            tooltip: isSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar',
-          ),
-          const SizedBox(width: 16),
-          // Page Title (optional, shows current selected page)
-          const Text(
-            'Admin Portal',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A2A3A),
-            ),
-          ),
-          const Spacer(),
-          // Admin profile or other header items can go here
-          CircleAvatar(
-            backgroundColor: Colors.amber[700],
-            child: const Text(
-              'A',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Text('Admin', style: TextStyle(color: Color(0xFF1A2A3A))),
-        ],
-      ),
-    );
-  }
-}
-
-// ========== DASHBOARD CONTENT ==========
-class DashboardContent extends StatelessWidget {
-  const DashboardContent({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Welcome back, Admin!',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1A2A3A),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Here\'s what\'s happening with your projects today.',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 32),
-          // Dashboard cards
-          GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: 4,
-            crossAxisSpacing: 20,
-            mainAxisSpacing: 20,
-            children: [
-              _buildDashboardCard('Active Projects', '12', Icons.build),
-              _buildDashboardCard('Inventory Items', '245', Icons.inventory),
-              _buildDashboardCard('Staff Members', '18', Icons.people),
-              _buildDashboardCard('Pending Reports', '3', Icons.bar_chart),
-            ],
-          ),
-          const SizedBox(height: 32),
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.richGold,
+                  AppColors.richGold.withValues(alpha: 0.75),
                 ],
               ),
-              padding: const EdgeInsets.all(20),
-              child: const Column(
+            ),
+            child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 22),
+          ),
+          if (isExpanded) ...[
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Recent Activity',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    'Queen Builders',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.softWhite,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 16),
-                  Expanded(
-                    child: Center(
-                      child: Text('Activity feed will appear here'),
+                  Text(
+                    'ADMIN CONSOLE',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.richGold,
+                      letterSpacing: 1.1,
+                      fontSize: 9,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
-
-  Widget _buildDashboardCard(String title, String value, IconData icon) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 32, color: Colors.amber[700]),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(title, style: TextStyle(color: Colors.grey[600])),
-        ],
-      ),
-    );
-  }
-}
-
-// ========== HELPER MODEL ==========
-class MenuItem {
-  final IconData icon;
-  final String label;
-  final int index;
-
-  MenuItem({required this.icon, required this.label, required this.index});
 }

@@ -32,6 +32,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='staff')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    notes = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     
     objects = UserManager()

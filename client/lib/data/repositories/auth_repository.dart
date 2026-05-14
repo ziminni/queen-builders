@@ -1,5 +1,6 @@
 // lib/data/repositories/auth_repository.dart
 import '../sources/remote/auth_remote_source.dart';
+import '../../core/auth/local_auth_credentials.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/api_service.dart';
 
@@ -13,6 +14,12 @@ class AuthRepository {
   }
   
   Future<bool> login(String email, String password) async {
+    final localRole = LocalAuthCredentials.instance.tryLogin(email, password);
+    if (localRole != null) {
+      await _storage.saveAuthData('local_access', 'local_refresh', localRole);
+      return true;
+    }
+
     final result = await _remoteSource.login(email, password);
     
     if (result['success'] == true) {

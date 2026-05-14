@@ -6,10 +6,12 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../routes/routes.dart';
 import '../../auth/viewmodel/auth_viewmodel.dart';
 import '../viewmodels/pos_viewmodel.dart';
-import '../models/sample_products.dart';
+import '../models/cart_item.dart';
 import '../widgets/pos_header.dart';
 import '../widgets/product_card.dart';
 import '../widgets/cart_item_widget.dart';
+import '../widgets/checkout_flow_dialogs.dart';
+import '../widgets/pos_checkout_feedback.dart';
 import '../widgets/checkout_section.dart';
 import '../widgets/profile_overlay.dart';
 
@@ -24,9 +26,10 @@ class _POSDashboardState extends State<POSDashboard> {
   @override
   void initState() {
     super.initState();
-    // Load sample products
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<POSViewModel>().setProducts(getSamplePOSProducts());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final pos = context.read<POSViewModel>();
+      await pos.loadPosCatalog();
+      await pos.loadSalesHistory();
     });
   }
 
@@ -45,13 +48,16 @@ class _POSDashboardState extends State<POSDashboard> {
                     // Header
                     POSHeader(
                       onNotificationTap: () {},
-                      onProfileTap: () => _showProfileMenu(context),
+                      onProfileTap: () => _showProfileMenu(context, viewModel),
                       notificationCount: 0,
                     ),
 
                     // Search Bar
                     _buildSearchBar(viewModel),
-
+                    if (viewModel.catalogError != null &&
+                        viewModel.products.isEmpty &&
+                        !viewModel.catalogLoading)
+                      _buildCatalogErrorBanner(viewModel),
                     // Product Grid
                     Expanded(
                       child: _buildProductGrid(viewModel),
@@ -69,52 +75,161 @@ class _POSDashboardState extends State<POSDashboard> {
     );
   }
 
+  Widget _buildCatalogErrorBanner(POSViewModel viewModel) {
+    return Material(
+      color: Colors.orange.shade50,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        child: Row(
+          children: [
+            Icon(Icons.cloud_off_outlined, color: Colors.orange.shade800, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Using offline sample catalog. ${viewModel.catalogError ?? ""}',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Colors.orange.shade900,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: viewModel.catalogLoading
+                  ? null
+                  : () {
+                      viewModel.loadPosCatalog();
+                    },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSearchBar(POSViewModel viewModel) {
+    final categories = viewModel.productCategories;
+    final selected = viewModel.categoryFilter;
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(
           bottom: BorderSide(color: AppColors.border),
         ),
       ),
-      child: TextField(
-        onChanged: (value) => viewModel.setSearchQuery(value),
-        decoration: InputDecoration(
-          hintText: 'Search products by name or category...',
-          hintStyle: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            onChanged: (value) => viewModel.setSearchQuery(value),
+            decoration: InputDecoration(
+              hintText: 'Search products by name or category...',
+              hintStyle: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.border, width: 2),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.border, width: 2),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.richGold, width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+            style: AppTextStyles.bodyMedium,
           ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: AppColors.textSecondary,
-            size: 20,
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _categoryFilterChip(
+                  viewModel: viewModel,
+                  label: 'All',
+                  category: null,
+                  selected: selected == null,
+                ),
+                ...categories.map(
+                  (c) => Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: _categoryFilterChip(
+                      viewModel: viewModel,
+                      label: c,
+                      category: c,
+                      selected: selected == c,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
+        ],
+      ),
+    );
+  }
+
+  Widget _categoryFilterChip({
+    required POSViewModel viewModel,
+    required String label,
+    required String? category,
+    required bool selected,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => viewModel.setCategoryFilter(category),
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.richGold.withValues(alpha: 0.14)
+                : const Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.border, width: 2),
+            border: Border.all(
+              color: selected ? AppColors.richGold : AppColors.border,
+              width: selected ? 2 : 1,
+            ),
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.border, width: 2),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.richGold, width: 2),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
+          child: Text(
+            label,
+            style: AppTextStyles.labelMedium.copyWith(
+              fontSize: 13,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+              color: selected ? AppColors.deepBlack : AppColors.textSecondary,
+            ),
           ),
         ),
-        style: AppTextStyles.bodyMedium,
       ),
     );
   }
 
   Widget _buildProductGrid(POSViewModel viewModel) {
+    if (viewModel.catalogLoading && viewModel.products.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.richGold),
+      );
+    }
+
     final products = viewModel.filteredProducts;
 
     if (products.isEmpty) {
@@ -139,19 +254,28 @@ class _POSDashboardState extends State<POSDashboard> {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(24),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        childAspectRatio: 1.0,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: products.length,
-      itemBuilder: (context, index) {
-        return ProductCard(
-          product: products[index],
-          onTap: () => viewModel.addToCart(products[index]),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final pad = 24.0 * 2;
+        final usableW = (constraints.maxWidth - pad).clamp(1.0, double.infinity);
+        final maxExtent =
+            usableW < 520 ? usableW / 2 - 12 : (usableW < 900 ? 220.0 : 260.0);
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(24),
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: maxExtent,
+            childAspectRatio: 1.28,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: products.length,
+          itemBuilder: (context, index) {
+            return ProductCard(
+              product: products[index],
+              onTap: () => viewModel.addToCart(products[index]),
+            );
+          },
         );
       },
     );
@@ -266,19 +390,66 @@ class _POSDashboardState extends State<POSDashboard> {
             tax: viewModel.tax,
             total: viewModel.total,
             hasItems: viewModel.cart.isNotEmpty,
-            onCreditPayment: () => _processPayment(viewModel, 'Credit Card'),
-            onCashPayment: () => _processPayment(viewModel, 'Cash'),
+            onPayLaterPayment: () => _onPayLaterPayment(viewModel),
+            onCashPayment: () => _onCashPayment(viewModel),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _processPayment(POSViewModel viewModel, String method) async {
-    await viewModel.processPayment(method);
-    if (mounted) {
-      _showReceiptDialog();
-    }
+  Future<void> _onCashPayment(POSViewModel viewModel) async {
+    await showCashCustomerDialog(
+      context,
+      cartItems: List<CartItem>.from(viewModel.cart),
+      subtotal: viewModel.subtotal,
+      tax: viewModel.tax,
+      total: viewModel.total,
+      onConfirm: ({
+        required isPayLater,
+        required customerName,
+        required contactNumber,
+        String? customerAddress,
+      }) async {
+        await showPOSCheckoutFeedback(
+          context,
+          isPayLater: isPayLater,
+          run: () async {
+            if (isPayLater) {
+              await viewModel.completePayLaterSale(
+                customerName: customerName,
+                customerAddress: customerAddress ?? '',
+                contactNumber: contactNumber,
+              );
+            } else {
+              await viewModel.completeCashSale(
+                customerName: customerName,
+                customerPhone: contactNumber,
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _onPayLaterPayment(POSViewModel viewModel) async {
+    await showPayLaterCustomerDialog(
+      context,
+      orderTotal: viewModel.total,
+      lineCount: viewModel.cart.length,
+      onConfirm: ({required name, required address, required contact}) async {
+        await showPOSCheckoutFeedback(
+          context,
+          isPayLater: true,
+          run: () => viewModel.completePayLaterSale(
+                customerName: name,
+                customerAddress: address,
+                contactNumber: contact,
+              ),
+        );
+      },
+    );
   }
 
   void _showClearCartDialog(POSViewModel viewModel) {
@@ -310,67 +481,13 @@ class _POSDashboardState extends State<POSDashboard> {
     );
   }
 
-  void _showReceiptDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: AppColors.richGold, width: 2),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppColors.richGold.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.receipt,
-                color: AppColors.richGold,
-                size: 32,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Payment Successful!',
-              style: AppTextStyles.h3.copyWith(
-                color: AppColors.deepBlack,
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Receipt is being printed...',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    // Auto-dismiss after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-    });
-  }
-
-  void _showProfileMenu(BuildContext context) {
+  void _showProfileMenu(BuildContext context, POSViewModel viewModel) {
     ProfileOverlay.show(
       context,
       userName: 'Maria Santos',
       userRole: 'Store Cashier',
       userInitials: 'MS',
+      transactions: viewModel.transactions,
       onLogout: _handleLogout,
     );
   }

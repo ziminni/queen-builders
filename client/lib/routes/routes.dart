@@ -2,13 +2,21 @@
 import 'package:flutter/material.dart';
 import 'package:client/features/admin/view/admin_dashboard.dart';
 import 'package:client/features/inventory/view/all_products_page.dart';
+import 'package:client/features/inventory/view/inventory_alerts_page.dart';
+import 'package:client/features/inventory/view/inventory_categories_page.dart';
+import 'package:client/features/inventory/view/inventory_deliveries_page.dart';
+import 'package:client/features/inventory/view/inventory_reports_page.dart';
+import 'package:client/features/inventory/view/inventory_settings_page.dart';
+import 'package:client/features/inventory/view/inventory_suppliers_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:client/features/auth/view/login_screen.dart';
 import 'package:client/features/auth/view/register_screen.dart';
 import 'package:client/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:client/features/inventory/view/inventory_dashboard.dart';
 import 'package:client/features/pos/view/pos_dashboard.dart';
+import 'package:client/features/project/models/project.dart';
 import 'package:client/features/project/view/project_dashboard.dart';
+import 'package:client/features/project/view/project_detail_page.dart';
 // import 'package:client/features/reports/view/reports_dashboard.dart';
 
 class AppRoutes {
@@ -20,9 +28,16 @@ class AppRoutes {
   static const String inventoryDashboard = "/inventory/dashboard";
   static const String inventoryProducts = "/inventory/products";
   static const String stockManager = "/inventory/dashboard";
-  static const String stockManagerProducts = "/inventory/products";
+  static const String inventoryCategories = '/inventory/categories';
+  static const String inventorySuppliers = '/inventory/suppliers';
+  static const String inventoryAlerts = '/inventory/alerts';
+  static const String inventoryDeliveries = '/inventory/deliveries';
+  static const String inventoryReports = '/inventory/reports';
+  static const String inventorySettings = '/inventory/settings';
   static const String posDashboard = "/pos/dashboard";
   static const String projectDashboard = "/project/dashboard";
+  /// `/project/detail/:projectId` — pass selected [Project] as `GoRouterState.extra`.
+  static const String projectDetail = '/project/detail';
   static const String reportsDashboard = "/reports/dashboard";
   
   static GoRouter createRouter(AuthViewModel authViewModel) {
@@ -69,8 +84,66 @@ class AppRoutes {
             child: const AllProductsPage(),
           ),
         ),
+        GoRoute(
+          path: inventoryCategories,
+          name: 'inventory-categories',
+          pageBuilder: (context, state) => _buildInventoryTransitionPage(
+            state: state,
+            child: const InventoryCategoriesPage(),
+          ),
+        ),
+        GoRoute(
+          path: inventorySuppliers,
+          name: 'inventory-suppliers',
+          pageBuilder: (context, state) => _buildInventoryTransitionPage(
+            state: state,
+            child: const InventorySuppliersPage(),
+          ),
+        ),
+        GoRoute(
+          path: inventoryAlerts,
+          name: 'inventory-alerts',
+          pageBuilder: (context, state) => _buildInventoryTransitionPage(
+            state: state,
+            child: const InventoryAlertsPage(),
+          ),
+        ),
+        GoRoute(
+          path: inventoryDeliveries,
+          name: 'inventory-deliveries',
+          pageBuilder: (context, state) => _buildInventoryTransitionPage(
+            state: state,
+            child: const InventoryDeliveriesPage(),
+          ),
+        ),
+        GoRoute(
+          path: inventoryReports,
+          name: 'inventory-reports',
+          pageBuilder: (context, state) => _buildInventoryTransitionPage(
+            state: state,
+            child: const InventoryReportsPage(),
+          ),
+        ),
+        GoRoute(
+          path: inventorySettings,
+          name: 'inventory-settings',
+          pageBuilder: (context, state) => _buildInventoryTransitionPage(
+            state: state,
+            child: const InventorySettingsPage(),
+          ),
+        ),
         GoRoute(path: posDashboard, name: 'pos', builder: (context, state) => const POSDashboard()),
-        GoRoute(path: projectDashboard, name: 'project', builder: (context, state) => const ProjectDashboard()),
+        GoRoute(path: projectDashboard, name: 'project', builder: (context, state) => const ProjectManagementDashboard()),
+        GoRoute(
+          path: '$projectDetail/:projectId',
+          name: 'project-detail',
+          builder: (context, state) {
+            final idStr = state.pathParameters['projectId'];
+            final id = int.tryParse(idStr ?? '') ?? 0;
+            final project = state.extra as Project?;
+            return ProjectDetailPage(projectId: id, project: project);
+          },
+        ),
         // GoRoute(path: reportsDashboard, name: 'reports', builder: (context, state) => const ReportsDashboard()),
       ],
     );

@@ -1,53 +1,82 @@
-// lib/features/dashboard/view/admin_dashboard.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
-import '../../auth/viewmodel/auth_viewmodel.dart';
-import '../../../routes/routes.dart';
 
-class AdminDashboard extends StatelessWidget {
+import '../../../core/constants/app_colors.dart';
+import '../widgets/admin_dashboard_sections.dart';
+import '../widgets/admin_header.dart';
+import '../widgets/admin_sidebar.dart';
+
+/// Admin console: user directory by role group, cross-module audit trail, system controls.
+class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
-  
+
+  @override
+  State<AdminDashboard> createState() => _AdminDashboardState();
+}
+
+class _AdminDashboardState extends State<AdminDashboard> {
+  bool _sidebarExpanded = true;
+  int _section = 0;
+
+  static const _titles = [
+    'User management',
+    'Audit logs',
+    'System management',
+  ];
+
+  static const _subtitles = [
+    'Accounts by role: Project manager, Stock manager, Cashier',
+    'Separated by module and category — inventory, POS, and more',
+    'Environment, data lifecycle, and operational controls',
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Dashboard'),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              // Show confirmation dialog
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Logout'),
-                  content: const Text('Are you sure you want to logout?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Logout', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
+      backgroundColor: const Color(0xFFFAFAFA),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AdminSidebar(
+            isExpanded: _sidebarExpanded,
+            selectedIndex: _section,
+            menuItems: AdminSidebar.defaultMenuItems,
+            onItemSelected: (i) => setState(() => _section = i),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AdminHeader(
+                  title: _titles[_section],
+                  subtitle: _subtitles[_section],
+                  sidebarExpanded: _sidebarExpanded,
+                  onToggleSidebar: () =>
+                      setState(() => _sidebarExpanded = !_sidebarExpanded),
                 ),
-              );
-              
-              if (confirm == true) {
-                await context.read<AuthViewModel>().logout();
-                context.go(AppRoutes.login);
-              }
-            },
+                Expanded(child: _sectionContent()),
+              ],
+            ),
           ),
         ],
       ),
-      body: Center(
-        child: Text('Welcome Admin!'),
-      ),
     );
+  }
+
+  Widget _sectionContent() {
+    switch (_section) {
+      case 0:
+        return const AdminUserManagementContent();
+      case 1:
+        return const AdminAuditLogsContent();
+      case 2:
+        return const AdminSystemManagementContent();
+      default:
+        return Center(
+          child: Text(
+            'Unknown section',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        );
+    }
   }
 }

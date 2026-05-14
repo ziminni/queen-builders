@@ -36,6 +36,8 @@ INSTALLED_APPS = [
 
     # Apps
     'users',
+    'inventory',
+    'projectm',
 ]
 
 # ⚠️ CRITICAL: Tell Django to use your custom User model

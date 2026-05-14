@@ -6,7 +6,7 @@ class CheckoutSection extends StatelessWidget {
   final double subtotal;
   final double tax;
   final double total;
-  final VoidCallback onCreditPayment;
+  final VoidCallback onPayLaterPayment;
   final VoidCallback onCashPayment;
   final bool hasItems;
 
@@ -15,7 +15,7 @@ class CheckoutSection extends StatelessWidget {
     required this.subtotal,
     required this.tax,
     required this.total,
-    required this.onCreditPayment,
+    required this.onPayLaterPayment,
     required this.onCashPayment,
     required this.hasItems,
   });
@@ -51,10 +51,10 @@ class CheckoutSection extends StatelessWidget {
 
           // Payment Buttons
           ElevatedButton.icon(
-            onPressed: hasItems ? onCreditPayment : null,
-            icon: const Icon(Icons.credit_card, size: 20),
+            onPressed: hasItems ? onPayLaterPayment : null,
+            icon: const Icon(Icons.handshake_outlined, size: 20),
             label: Text(
-              'Complete Payment',
+              'Pay-Later Payment',
               style: AppTextStyles.button.copyWith(fontSize: 15),
             ),
             style: ElevatedButton.styleFrom(

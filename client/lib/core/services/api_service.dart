@@ -6,6 +6,14 @@ import 'storage_service.dart';
 class ApiService {
   late final Dio _dio;
   final StorageService _storage = StorageService();
+
+  /// Local demo login stores placeholders like `local_access`, not a JWT.
+  /// Sending those as `Bearer` makes django-rest-framework-simplejwt reject the
+  /// request with 401 before `AllowAny` is evaluated.
+  static bool _looksLikeJwt(String token) {
+    final parts = token.split('.');
+    return parts.length >= 3;
+  }
   
   ApiService() {
     _initDio();
@@ -31,7 +39,7 @@ class ApiService {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final token = await _storage.getToken('access_token');
-        if (token != null) {
+        if (token != null && _looksLikeJwt(token)) {
           options.headers['Authorization'] = 'Bearer $token';
         }
         print('🌐 ${options.method} ${options.uri}');
@@ -59,12 +67,12 @@ class ApiService {
   Future<bool> _refreshToken() async {
     try {
       final refreshToken = await _storage.getToken('refresh_token');
-      if (refreshToken == null) return false;
-      
-      final response = await _dio.post(ApiConfig.refreshEndpoint, 
+      if (refreshToken == null || !_looksLikeJwt(refreshToken)) return false;
+
+      final response = await _dio.post(ApiConfig.refreshEndpoint,
         data: {'refresh': refreshToken}
       );
-      
+
       await _storage.saveToken('access_token', response.data['access']);
       return true;
     } catch (e) {
@@ -74,7 +82,11 @@ class ApiService {
   
   Future<Response> _retry(RequestOptions requestOptions) async {
     final token = await _storage.getToken('access_token');
-    requestOptions.headers['Authorization'] = 'Bearer $token';
+    if (token != null && _looksLikeJwt(token)) {
+      requestOptions.headers['Authorization'] = 'Bearer $token';
+    } else {
+      requestOptions.headers.remove('Authorization');
+    }
     return _dio.fetch(requestOptions);
   }
   

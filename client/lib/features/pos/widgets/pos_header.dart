@@ -105,16 +105,6 @@ class POSHeader extends StatelessWidget {
             tooltip: 'Material Requests',
           ),
 
-          const SizedBox(width: 4),
-
-          // Fulfillment Receipts Notification
-          IconButton(
-            icon: const Icon(Icons.receipt_outlined, size: 20),
-            color: AppColors.softWhite.withOpacity(0.7),
-            onPressed: onNotificationTap,
-            tooltip: 'Fulfillment Receipts',
-          ),
-
           const SizedBox(width: 8),
 
           // Profile

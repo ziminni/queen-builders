@@ -5,6 +5,11 @@ class Transaction {
   final double total;
   final String paymentMethod;
   final List<TransactionItem> items;
+  /// When true, sale is recorded as collectible / "utang" (pay-later).
+  final bool isPayLater;
+  final String? customerName;
+  final String? customerPhone;
+  final String? customerAddress;
 
   Transaction({
     required this.id,
@@ -13,6 +18,10 @@ class Transaction {
     required this.total,
     required this.paymentMethod,
     required this.items,
+    this.isPayLater = false,
+    this.customerName,
+    this.customerPhone,
+    this.customerAddress,
   });
 
   Map<String, dynamic> toJson() {
@@ -23,12 +32,18 @@ class Transaction {
       'total': total,
       'paymentMethod': paymentMethod,
       'itemDetails': items.map((item) => item.toJson()).toList(),
+      'isPayLater': isPayLater,
+      'customerName': customerName,
+      'customerPhone': customerPhone,
+      'customerAddress': customerAddress,
     };
   }
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
+    final idRaw = json['id'];
+    final id = idRaw is String ? idRaw : idRaw.toString();
     return Transaction(
-      id: json['id'] as String,
+      id: id,
       timestamp: DateTime.parse(json['timestamp'] as String),
       itemsCount: json['items'] as int,
       total: (json['total'] as num).toDouble(),
@@ -36,6 +51,10 @@ class Transaction {
       items: (json['itemDetails'] as List<dynamic>? ?? [])
           .map((item) => TransactionItem.fromJson(item as Map<String, dynamic>))
           .toList(),
+      isPayLater: json['isPayLater'] as bool? ?? false,
+      customerName: json['customerName'] as String?,
+      customerPhone: json['customerPhone'] as String?,
+      customerAddress: json['customerAddress'] as String?,
     );
   }
 }

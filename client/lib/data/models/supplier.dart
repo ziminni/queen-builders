@@ -55,7 +55,7 @@ class Supplier {
 
 /// Predefined suppliers for Queen Builders
 class Suppliers {
-  static final List<Supplier> all = [
+  static final List<Supplier> _defaultSuppliers = [
     const Supplier(
       code: 'SUP-A',
       name: 'Supplier A - Boysen Paint Center',
@@ -183,4 +183,25 @@ class Suppliers {
       categories: ['Safety Equipment'],
     ),
   ];
+
+  static final List<Supplier> _customSuppliers = [];
+
+  static List<Supplier> get all => List<Supplier>.unmodifiable(
+    _customSuppliers.isEmpty ? _defaultSuppliers : _customSuppliers,
+  );
+
+  static bool codeExists(String code) {
+    final normalized = code.trim().toLowerCase();
+    return all.any((supplier) => supplier.code.toLowerCase() == normalized);
+  }
+
+  static void add(Supplier supplier) {
+    _customSuppliers.add(supplier);
+  }
+
+  static void replaceAll(List<Supplier> suppliers) {
+    _customSuppliers
+      ..clear()
+      ..addAll(suppliers);
+  }
 }
